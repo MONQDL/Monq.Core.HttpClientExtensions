@@ -1,0 +1,53 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29418.71
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{72AA1F10-76E8-4295-AA52-C1121F54A0E9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6235AA34-AC1A-4A7D-BF6C-819F8A848671}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		CHANGELOG = CHANGELOG
+		LICENSE = LICENSE
+		.github\workflows\netcorelibrary.yml = .github\workflows\netcorelibrary.yml
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Monq.Core.HttpClientExtensions", "src\Monq.Core.HttpClientExtensions\Monq.Core.HttpClientExtensions.csproj", "{FFF08A51-A2C5-4434-BC0E-1EA701BFFBAF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Monq.Core.HttpClientExtensions.Tests", "src\Monq.Core.HttpClientExtensions.Tests\Monq.Core.HttpClientExtensions.Tests.csproj", "{753009A6-624F-42C6-8C43-FB9FF9E34F4A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Monq.Core.HttpClientExtensions.TestApp", "src\Monq.Core.HttpClientExtensions.TestApp\Monq.Core.HttpClientExtensions.TestApp.csproj", "{8C52D2C2-1EFD-48A3-8DFB-D8D868424E27}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FFF08A51-A2C5-4434-BC0E-1EA701BFFBAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FFF08A51-A2C5-4434-BC0E-1EA701BFFBAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FFF08A51-A2C5-4434-BC0E-1EA701BFFBAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FFF08A51-A2C5-4434-BC0E-1EA701BFFBAF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{753009A6-624F-42C6-8C43-FB9FF9E34F4A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{753009A6-624F-42C6-8C43-FB9FF9E34F4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{753009A6-624F-42C6-8C43-FB9FF9E34F4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{753009A6-624F-42C6-8C43-FB9FF9E34F4A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C52D2C2-1EFD-48A3-8DFB-D8D868424E27}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C52D2C2-1EFD-48A3-8DFB-D8D868424E27}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C52D2C2-1EFD-48A3-8DFB-D8D868424E27}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C52D2C2-1EFD-48A3-8DFB-D8D868424E27}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{FFF08A51-A2C5-4434-BC0E-1EA701BFFBAF} = {72AA1F10-76E8-4295-AA52-C1121F54A0E9}
+		{753009A6-624F-42C6-8C43-FB9FF9E34F4A} = {72AA1F10-76E8-4295-AA52-C1121F54A0E9}
+		{8C52D2C2-1EFD-48A3-8DFB-D8D868424E27} = {72AA1F10-76E8-4295-AA52-C1121F54A0E9}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {04779810-FF98-44D8-94C2-59409E960B6E}
+	EndGlobalSection
+EndGlobal
