@@ -37,6 +37,43 @@ hostBuilder.ConfigBasicHttpService(opts =>
 
 ```
 
+In default mode, the library uses the `Newtonsoft.Json` serializer, but it is possible to switch to `System.Text.Json`. Example:
+
+*Startup.cs*
+```csharp
+{
+	public void ConfigureServices(IServiceCollection services)
+    {
+		....
+		RestHttpClientSerializer.UseSystemTextJson(options => options.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase); // Use System.Text.Json with options.
+        RestHttpClientSerializer.UseNewtonsoftJson(); // Use NewtonsoftJson. Default.
+	}
+}
+```
+
+The default serializer options are:
+
+*Newtonsoft.Json*
+```csharp
+new Newtonsoft.Json.JsonSerializerSettings() { ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver
+{
+    NamingStrategy = new Newtonsoft.Json.Serialization.CamelCaseNamingStrategy
+    {
+        ProcessDictionaryKeys = true
+    }
+}};
+```
+
+*System.Text.Json*
+```csharp
+new System.Text.Json.JsonSerializerOptions
+{
+    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+    DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+    PropertyNameCaseInsensitive = true
+};
+```
+
 In normal mode, the library aims to automatically forward the `Bearer token` from the `IHttpContextAccessor` context. But in some cases, for example, in console programs, the program itself needs to get a `Bearer token` in order to execute requests. In this case, you need to set your own handler for requesting tokens. The library contains a default implementation for getting tokens from the `oidc` provider, which can be connected by setting a reference to your handler delegate.
 
 ```csharp
@@ -352,6 +389,43 @@ hostBuilder.ConfigBasicHttpService(opts =>
 
 ```
 
+В режиме по умолчанию библиотека использует сериализатор `Newtonsoft.Json`, но есть возможность переключиться на `System.Text.Json`. Пример:
+
+*Startup.cs*
+```csharp
+{
+	public void ConfigureServices(IServiceCollection services)
+    {
+		....
+		RestHttpClientSerializer.UseSystemTextJson(options => options.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase); // Use System.Text.Json with options.
+        RestHttpClientSerializer.UseNewtonsoftJson(); // Use NewtonsoftJson. Default.
+	}
+}
+```
+
+Опции сериализаторов, использующиеся по умолчанию:
+
+*Newtonsoft.Json*
+```csharp
+new Newtonsoft.Json.JsonSerializerSettings() { ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver
+{
+    NamingStrategy = new Newtonsoft.Json.Serialization.CamelCaseNamingStrategy
+    {
+        ProcessDictionaryKeys = true
+    }
+}};
+```
+
+*System.Text.Json*
+```csharp
+new System.Text.Json.JsonSerializerOptions
+{
+    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+    DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+    PropertyNameCaseInsensitive = true
+};
+```
+
 В обычном режиме библиотека нацелена на автоматический проброс `Bearer token` из контекста `IHttpContextAccessor`. Но в некоторых случаях, например, в консольных программах, программе самой требуется получить `Bearer token` для выполнения запросов. В таком случае требуется установить свой собственный обработчик получения токенов. Библиотека содержит реализацию по умолчанию для получения токенов из `Identity Provider`, которую можно подключить, установив ссылку на делегат своего обработчика.
 
 ```csharp
@@ -377,11 +451,16 @@ hostBuilder.ConfigureStaticAuthentication();
 
 *Program.cs*
 ```csharp
-using IdentityModel.Client;
-using Monq.Core.HttpClientExtensions.Exceptions;
-using System.Net.Http;
-using System.Threading.Tasks;
+{
+	public void ConfigureServices(IServiceCollection services)
+    {
+		....
+		services.AddOptions();
+        services.Configure<ServiceUriOptions>(Configuration.GetSection("Services"));
 
+		services.AddScoped<IRemoteServiceApiHttpService, DefaultRemoteServiceApiHttpService>();
+	}
+}
 ...
 
 RestHttpClient.AuthorizationRequest += RestHttpClientAuthorizationRequest;
