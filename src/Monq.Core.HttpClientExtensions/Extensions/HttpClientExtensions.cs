@@ -1,6 +1,5 @@
 ﻿using System.Net.Http;
 using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,12 +10,6 @@ namespace Monq.Core.HttpClientExtensions.Extensions
     /// </summary>
     static class HttpClientExtensions
     {
-        static readonly JsonSerializerOptions SerializeOptions = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
-        };
-
         /// <summary>
         /// Выполнить Http POST запрос по адресу <paramref name="uri"/> и телом запроса <paramref name="value"/>.
         /// </summary>
@@ -61,7 +54,7 @@ namespace Monq.Core.HttpClientExtensions.Extensions
 
             var method = new HttpMethod(requestType);
 
-            var serializedRequestValue = JsonSerializer.Serialize(value, SerializeOptions);
+            var serializedRequestValue = RestHttpClientSerializer.Serialize(value);
             var request = new HttpRequestMessage(method, uri)
             {
                 Content = new StringContent(serializedRequestValue, Encoding.UTF8, "application/json")

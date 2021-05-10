@@ -10,7 +10,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http;
 using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -29,7 +28,6 @@ namespace Monq.Core.HttpClientExtensions
         /// Семафор для синхронизации потоков получения AccessToken.
         /// </summary>
         static readonly SemaphoreSlim SemaphoreSlim = new SemaphoreSlim(1, 1);
-        static readonly JsonSerializerOptions SerializeOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
         readonly TimeSpan _defaultTimeout = TimeSpan.FromSeconds(10);
 
@@ -381,7 +379,7 @@ namespace Monq.Core.HttpClientExtensions
             var result = string.Empty;
             HttpResponseMessage response;
             using var cts = CreateTimeoutCancelToken(timeout);
-            var serializedRequestValue = JsonSerializer.Serialize(value, SerializeOptions);
+            var serializedRequestValue = RestHttpClientSerializer.Serialize(value);
             try
             {
                 await SetToken();

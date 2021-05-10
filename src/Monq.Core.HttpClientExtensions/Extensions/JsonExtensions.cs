@@ -13,8 +13,6 @@ namespace Monq.Core.HttpClientExtensions.Extensions
         /// <typeparam name="T">Тип объекта, в который требуется провести десериализацию.</typeparam>
         /// <param name="value">Строка с данными, которые требуется десериализовать.</param>
         public static T? JsonToObject<T>(this string value) =>
-            JsonSerializer.Deserialize<T>(value, new JsonSerializerOptions {
-                PropertyNameCaseInsensitive = true,
-            });
+            RestHttpClientSerializer.Deserialize<T>(value);
     }
 }
