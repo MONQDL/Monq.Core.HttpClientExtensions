@@ -509,6 +509,10 @@ namespace Monq.Core.HttpClientExtensions
 
         async Task SetToken(bool invokeHandler = false)
         {
+            // If token was set by HttpAccessHandler use it.
+            if (DefaultRequestHeaders?.Authorization?.Parameter is not null && !invokeHandler)
+                return;
+
             var token = await GetAccessToken(invokeHandler);
             if (token != null)
                 this.SetBearerToken(token.AccessToken);
