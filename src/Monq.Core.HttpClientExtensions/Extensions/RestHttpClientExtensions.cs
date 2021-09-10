@@ -1,64 +1,158 @@
-﻿using IdentityModel.Client;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-using Monq.Core.HttpClientExtensions.Exceptions;
-using System.Net.Http;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
-using static Monq.Core.HttpClientExtensions.AuthConstants;
 
-namespace Monq.Core.HttpClientExtensions.Extensions
+namespace Monq.Core.HttpClientExtensions.Services
 {
     /// <summary>
-    /// Базовые методы расширения для http-клиента.
+    /// Методы расширения для базового http-клиента (<see cref="RestHttpClient"/>).
     /// </summary>
-    public static class RestHttpClientExtensions
+    static class RestHttpClientExtensions
     {
-        static IConfiguration _configuration;
-        const string WriteScope = "write";
+        public static CancellationTokenSource CreateTimeoutCancelToken(this RestHttpClient restHttpClient, TimeSpan timeout) =>
+            new CancellationTokenSource(timeout == default ? restHttpClient.DefaultTimeout : timeout);
 
         /// <summary>
-        /// Выполнить конфигурацию статического метода аутентификации, который будет выполнен при первом запросе HttpClient.
+        /// Выполнить HTTP Get запрос и вернуть результат десериализованный в тип <typeparamref name="TResult"/>.
         /// </summary>
-        /// <param name="hostBuilder">The host builder.</param>
-        public static IHostBuilder ConfigureStaticAuthentication(this IHostBuilder hostBuilder) =>
-            hostBuilder
-                .ConfigureServices((builderContext, config) =>
-                {
-                    var authEndpoint = $"{Authentication.AuthenticationSection}:{Authentication.AuthenticationEndpoint}";
-                    if (string.IsNullOrEmpty(builderContext.Configuration[authEndpoint]))
-                        throw new MissingConfigurationException("Не найдена конфигурация { \"Authentication\": {...} } в загруженных провайдерах конфигураций.");
+        /// <typeparam name="TResult">Тип результата запроса.</typeparam>
+        /// <param name="restHttpClient">The RestHttpClient instance.</param>
+        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
+        /// <param name="timeout">Таймаут ожидания ответа.</param>
+        /// <exception cref="Exceptions.ResponseException"></exception>
+        public static Task<RestHttpResponseMessage<TResult>> Get<TResult>(this RestHttpClient restHttpClient,
+            string uri,
+            TimeSpan timeout) =>
+                restHttpClient.Get<TResult>(uri, restHttpClient.CreateTimeoutCancelToken(timeout).Token);
 
-                    _configuration = builderContext.Configuration;
-                    RestHttpClient.AuthorizationRequest += RestHttpClientAuthorizationRequest;
-                });
+        /// <summary>
+        /// Выполнить HTTP POST запрос c телом типа <typeparamref name="TRequest"/> и вернуть результат десериализованный в тип <typeparamref name="TResult"/>.
+        /// </summary>
+        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
+        /// <typeparam name="TResult">Тип результата.</typeparam>
+        /// <param name="restHttpClient">The RestHttpClient instance.</param>
+        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
+        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
+        /// <param name="timeout">Таймаут ожидания ответа.</param>
+        /// <exception cref="Exceptions.ResponseException"></exception>
+        public static Task<RestHttpResponseMessage<TResult?>> Post<TRequest, TResult>(this RestHttpClient restHttpClient,
+            string uri,
+            TRequest value,
+            TimeSpan timeout) =>
+                restHttpClient.Post<TRequest, TResult?>(uri, value, restHttpClient.CreateTimeoutCancelToken(timeout).Token);
 
-        static async Task<TokenResponse> RestHttpClientAuthorizationRequest(HttpClient client)
-        {
-            // TODO: Вынести хардкод в опции и Default конфигурацию.
-            // Вынести хардкод в опции и Default конфигурацию.
-            var authConfig = _configuration.GetSection(Authentication.AuthenticationSection);
+        /// <summary>
+        /// Выполнить HTTP POST запрос c телом типа <typeparamref name="TRequest"/>, результат не возвращать.
+        /// </summary>
+        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
+        /// <param name="restHttpClient">The RestHttpClient instance.</param>
+        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
+        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
+        /// <param name="timeout">Таймаут ожидания ответа.</param>
+        /// <exception cref="Exceptions.ResponseException"></exception>
+        public static Task Post<TRequest>(this RestHttpClient restHttpClient,
+            string uri,
+            TRequest value,
+            TimeSpan timeout) =>
+                restHttpClient.Post(uri, value, restHttpClient.CreateTimeoutCancelToken(timeout).Token);
 
-            if (!bool.TryParse(authConfig[Authentication.RequireHttpsMetadata], out var requireHttps))
-                requireHttps = false;
+        /// <summary>
+        /// Выполнить HTTP PUT запрос c телом типа <typeparamref name="TRequest"/> и вернуть результат десериализованный в тип <typeparamref name="TResult"/>.
+        /// </summary>
+        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
+        /// <typeparam name="TResult">Тип результата.</typeparam>
+        /// <param name="restHttpClient">The RestHttpClient instance.</param>
+        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
+        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
+        /// <param name="timeout">Таймаут ожидания ответа.</param>
+        /// <exception cref="Exceptions.ResponseException"></exception>
+        public static Task<RestHttpResponseMessage<TResult?>> Put<TRequest, TResult>(this RestHttpClient restHttpClient,
+            string uri,
+            TRequest value,
+            TimeSpan timeout) =>
+                restHttpClient.Put<TRequest, TResult?>(uri, value, restHttpClient.CreateTimeoutCancelToken(timeout).Token);
 
-            var discoveryDocumentRequest = new DiscoveryDocumentRequest
-            {
-                Address = authConfig[Authentication.AuthenticationEndpoint],
-                Policy = new DiscoveryPolicy { RequireHttps = requireHttps }
-            };
-            var disco = await client.GetDiscoveryDocumentAsync(discoveryDocumentRequest);
-            if (disco.IsError) throw new DiscoveryEndpointException(disco.Error, disco.Exception);
+        /// <summary>
+        /// Выполнить HTTP PUT запрос c телом типа <typeparamref name="TRequest"/>, результат не возвращать.
+        /// </summary>
+        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
+        /// <param name="restHttpClient">The RestHttpClient instance.</param>
+        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
+        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
+        /// <param name="timeout">Таймаут ожидания ответа.</param>
+        /// <exception cref="Exceptions.ResponseException"></exception>
+        public static Task Put<TRequest>(this RestHttpClient restHttpClient,
+            string uri,
+            TRequest value,
+            TimeSpan timeout) =>
+                restHttpClient.Put(uri, value, restHttpClient.CreateTimeoutCancelToken(timeout).Token);
 
-            var request = new ClientCredentialsTokenRequest
-            {
-                Address = disco.TokenEndpoint,
-                ClientId = authConfig[Authentication.ClientName],
-                ClientSecret = authConfig[Authentication.ClientSecret],
-                Scope = WriteScope
-            };
+        /// <summary>
+        /// Выполнить HTTP PATCH запрос c телом типа <typeparamref name="TRequest"/>, результат не возвращать.
+        /// </summary>
+        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
+        /// <param name="restHttpClient">The RestHttpClient instance.</param>
+        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
+        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
+        /// <param name="timeout">Таймаут ожидания ответа.</param>
+        /// <exception cref="Exceptions.ResponseException"></exception>
+        public static Task Patch<TRequest>(this RestHttpClient restHttpClient,
+            string uri,
+            TRequest value,
+            TimeSpan timeout) =>
+                restHttpClient.Patch(uri, value, restHttpClient.CreateTimeoutCancelToken(timeout).Token);
 
-            var response = await client.RequestClientCredentialsTokenAsync(request);
-            return response;
-        }
+        /// <summary>
+        /// Выполнить HTTP PATCH запрос c телом типа <typeparamref name="TRequest"/> и вернуть результат десериализованный в тип <typeparamref name="TResult"/>.
+        /// </summary>
+        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
+        /// <typeparam name="TResult">Тип результата.</typeparam>
+        /// <param name="restHttpClient">The RestHttpClient instance.</param>
+        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
+        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
+        /// <param name="timeout">Таймаут ожидания ответа.</param>
+        /// <exception cref="Exceptions.ResponseException"></exception>
+        public static Task<RestHttpResponseMessage<TResult?>> Patch<TRequest, TResult>(this RestHttpClient restHttpClient,
+            string uri,
+            TRequest value,
+            TimeSpan timeout) =>
+                restHttpClient.Patch<TRequest, TResult?>(uri, value, restHttpClient.CreateTimeoutCancelToken(timeout).Token);
+
+        /// <summary>
+        /// Выполнить HTTP DELETE запрос, результат не возвращать.
+        /// </summary>
+        /// <param name="restHttpClient">The RestHttpClient instance.</param>
+        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
+        /// <param name="timeout">Таймаут ожидания ответа.</param>
+        public static Task Delete(this RestHttpClient restHttpClient, string uri, TimeSpan timeout) =>
+            restHttpClient.Delete(uri, restHttpClient.CreateTimeoutCancelToken(timeout).Token);
+
+        /// <summary>
+        /// Выполнить HTTP DELETE запрос, и вернуть результат десериализованный в тип <typeparamref name="TResult"/>.
+        /// </summary>
+        /// <typeparam name="TResult">Тип результата.</typeparam>
+        /// <param name="restHttpClient">The RestHttpClient instance.</param>
+        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
+        /// <param name="timeout">Таймаут ожидания ответа.</param>
+        /// <exception cref="Exceptions.ResponseException"></exception>
+        public static Task<RestHttpResponseMessage<TResult?>> Delete<TResult>(this RestHttpClient restHttpClient,
+            string uri,
+            TimeSpan timeout) =>
+            restHttpClient.Delete<TResult>(uri, restHttpClient.CreateTimeoutCancelToken(timeout).Token);
+
+        /// <summary>
+        /// Выполнить HTTP DELETE запрос c телом типа <typeparamref name="TRequest"/>, результат не возвращать.
+        /// </summary>
+        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
+        /// <param name="restHttpClient">The RestHttpClient instance.</param>
+        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
+        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
+        /// <param name="timeout">Таймаут ожидания ответа.</param>
+        /// <exception cref="Exceptions.ResponseException"></exception>
+        public static Task Delete<TRequest>(this RestHttpClient restHttpClient, 
+            string uri, 
+            TRequest value, 
+            TimeSpan timeout) =>
+                restHttpClient.Delete(uri, value, restHttpClient.CreateTimeoutCancelToken(timeout).Token);
     }
 }

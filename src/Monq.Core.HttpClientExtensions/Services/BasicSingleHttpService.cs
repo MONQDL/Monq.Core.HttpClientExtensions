@@ -1,18 +1,17 @@
-﻿using System;
-using System.Linq;
-using System.Net.Http;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System;
+using System.Linq;
+using System.Net.Http;
 
 namespace Monq.Core.HttpClientExtensions.Services
 {
     /// <summary>
     /// Базовый тип Http сервиса, который имеет единую точку доступа в виде BaseUri.
     /// </summary>
-    public abstract class BasicSingleHttpService<TOptions> : BasicHttpService
+    public class BasicSingleHttpService<TOptions> : RestHttpClient
         where TOptions : class, new()
-
     {
         /// <summary>
         /// Базовый Uri Http сервиса.
@@ -22,37 +21,43 @@ namespace Monq.Core.HttpClientExtensions.Services
         /// <summary>
         /// Инициализирует новый экземпляр класса <see cref="BasicSingleHttpService{TOptions}" />.
         /// </summary>
-        /// <param name="optionsAccessor">The options.</param>
+        /// <param name="httpClient">The HttpClient from http client factory.</param>
         /// <param name="loggerFactory">The logger factory.</param>
         /// <param name="configuration">The configuration.</param>
         /// <param name="httpContextAccessor">The HTTP context accessor.</param>
-        /// <param name="baseUri">Базовый Uri, по которому доступен микросервис. Например: http://rsm.api.smon.monq.ru</param>
-        /// <param name="httpMessageInvoker">The HTTP message invoker.</param>
-        /// <exception cref="ArgumentNullException">baseUri - Не указан базовый Uri сервиса.</exception>
-        protected BasicSingleHttpService(
-            IOptions<TOptions> optionsAccessor,
+        /// <param name="baseUri">The base Uri of all requests. For example: http://rsm.api.monq.cloud</param>
+        public BasicSingleHttpService(
+            HttpClient httpClient,
             ILoggerFactory loggerFactory,
             BasicHttpServiceOptions configuration,
-            IHttpContextAccessor? httpContextAccessor,
-            string baseUri,
-            HttpMessageHandler? httpMessageInvoker = null)
-            : base(loggerFactory, configuration, httpContextAccessor, httpMessageInvoker)
+            IHttpContextAccessor httpContextAccessor,
+            string baseUri) : base(httpClient, loggerFactory, configuration, httpContextAccessor)
         {
             if (string.IsNullOrWhiteSpace(baseUri))
                 throw new ArgumentNullException(nameof(baseUri), "The base uri not set.");
             BaseUri = AddTrailingSlash(baseUri);
+
+            HttpClient.BaseAddress = new Uri(BaseUri);
         }
 
         /// <summary>
-        /// Создать новый экземпляр класса <see cref="T:Monq.Core.HttpClientExtensions.RestHttpClient" />.
+        /// Инициализирует новый экземпляр класса <see cref="BasicSingleHttpService{TOptions}" />.
         /// </summary>
-        public override RestHttpClient CreateRestHttpClient()
+        /// <param name="optionsAccessor">The options.</param>
+        /// <param name="httpClient">The HttpClient from http client factory.</param>
+        /// <param name="loggerFactory">The logger factory.</param>
+        /// <param name="configuration">The configuration.</param>
+        /// <param name="httpContextAccessor">The HTTP context accessor.</param>
+        /// <param name="baseUri">The base Uri of all requests. For example: http://rsm.api.monq.cloud</param>
+        public BasicSingleHttpService(
+            IOptions<TOptions> optionsAccessor,
+            HttpClient httpClient,
+            ILoggerFactory loggerFactory,
+            BasicHttpServiceOptions configuration,
+            IHttpContextAccessor httpContextAccessor,
+            string baseUri) : this(httpClient, loggerFactory, configuration, httpContextAccessor, baseUri)
         {
-            var client = base.CreateRestHttpClient();
 
-            client.BaseAddress = new Uri(BaseUri);
-
-            return client;
         }
 
         string AddTrailingSlash(string baseUri)

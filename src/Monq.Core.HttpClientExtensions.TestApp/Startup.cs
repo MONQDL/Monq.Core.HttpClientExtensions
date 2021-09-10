@@ -20,8 +20,9 @@ namespace Monq.Core.HttpClientExtensions.TestApp
         {
             services.AddOptions();
             services.AddHttpContextAccessor();
+            services.AddLogging();
             services.Configure<ServiceUriOptions>(x => x.TestServiceUri = "https://jsonplaceholder.typicode.com");
-            services.AddTransient<ITestService, TestService>();
+            services.AddHttpClient<ITestService, TestService>();
 
             services.AddControllers()
                 .AddJsonOptions(options =>
