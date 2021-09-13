@@ -10,7 +10,7 @@ namespace Monq.Core.HttpClientExtensions.Services
     /// <summary>
     /// Базовый тип Http сервиса, который имеет единую точку доступа в виде BaseUri.
     /// </summary>
-    public class BasicSingleHttpService<TOptions> : RestHttpClient
+    public class RestHttpClientFromOptions<TOptions> : RestHttpClient
         where TOptions : class, new()
     {
         /// <summary>
@@ -19,14 +19,14 @@ namespace Monq.Core.HttpClientExtensions.Services
         protected string BaseUri { get; }
 
         /// <summary>
-        /// Инициализирует новый экземпляр класса <see cref="BasicSingleHttpService{TOptions}" />.
+        /// Initializes a new instance of the <see cref="RestHttpClientFromOptions{TOptions}"/> class.
         /// </summary>
         /// <param name="httpClient">The HttpClient from http client factory.</param>
         /// <param name="loggerFactory">The logger factory.</param>
         /// <param name="configuration">The configuration.</param>
         /// <param name="httpContextAccessor">The HTTP context accessor.</param>
         /// <param name="baseUri">The base Uri of all requests. For example: http://rsm.api.monq.cloud</param>
-        public BasicSingleHttpService(
+        public RestHttpClientFromOptions(
             HttpClient httpClient,
             ILoggerFactory loggerFactory,
             BasicHttpServiceOptions configuration,
@@ -41,7 +41,7 @@ namespace Monq.Core.HttpClientExtensions.Services
         }
 
         /// <summary>
-        /// Инициализирует новый экземпляр класса <see cref="BasicSingleHttpService{TOptions}" />.
+        /// Initializes a new instance of the <see cref="RestHttpClientFromOptions{TOptions}"/> class.
         /// </summary>
         /// <param name="optionsAccessor">The options.</param>
         /// <param name="httpClient">The HttpClient from http client factory.</param>
@@ -49,7 +49,7 @@ namespace Monq.Core.HttpClientExtensions.Services
         /// <param name="configuration">The configuration.</param>
         /// <param name="httpContextAccessor">The HTTP context accessor.</param>
         /// <param name="baseUri">The base Uri of all requests. For example: http://rsm.api.monq.cloud</param>
-        public BasicSingleHttpService(
+        public RestHttpClientFromOptions(
             IOptions<TOptions> optionsAccessor,
             HttpClient httpClient,
             ILoggerFactory loggerFactory,

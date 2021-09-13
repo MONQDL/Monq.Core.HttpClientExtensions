@@ -2,12 +2,12 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Monq.Core.HttpClientExtensions.Services
+namespace Monq.Core.HttpClientExtensions
 {
     /// <summary>
     /// Методы расширения для базового http-клиента (<see cref="RestHttpClient"/>).
     /// </summary>
-    static class RestHttpClientExtensions
+    public static class RestHttpClientExtensions
     {
         public static CancellationTokenSource CreateTimeoutCancelToken(this RestHttpClient restHttpClient, TimeSpan timeout) =>
             new CancellationTokenSource(timeout == default ? restHttpClient.DefaultTimeout : timeout);
@@ -20,7 +20,7 @@ namespace Monq.Core.HttpClientExtensions.Services
         /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
         /// <param name="timeout">Таймаут ожидания ответа.</param>
         /// <exception cref="Exceptions.ResponseException"></exception>
-        public static Task<RestHttpResponseMessage<TResult>> Get<TResult>(this RestHttpClient restHttpClient,
+        public static Task<RestHttpResponseMessage<TResult?>> Get<TResult>(this RestHttpClient restHttpClient,
             string uri,
             TimeSpan timeout) =>
                 restHttpClient.Get<TResult>(uri, restHttpClient.CreateTimeoutCancelToken(timeout).Token);

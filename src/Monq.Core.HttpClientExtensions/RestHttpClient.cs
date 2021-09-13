@@ -43,6 +43,9 @@ namespace Monq.Core.HttpClientExtensions
         /// </summary>
         public TimeSpan DefaultTimeout => _defaultTimeout;
 
+        /// <summary>
+        /// The actual http client from the IHttpClientFactory.
+        /// </summary>
         public HttpClient HttpClient => _httpClient;
 
         /// <summary>
@@ -82,7 +85,7 @@ namespace Monq.Core.HttpClientExtensions
         public BasicHttpServiceOptions Configuration { get; }
 
         /// <summary>
-        /// Инициализирует новый экземпляр класса <see cref="RestHttpClient" />.
+        /// Initializes a new instance of the <see cref="RestHttpClient"/> class.
         /// </summary>
         /// <param name="httpClient">The HttpClient from http client factory.</param>
         /// <param name="loggerFactory">The logger factory.</param>

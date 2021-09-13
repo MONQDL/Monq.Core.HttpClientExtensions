@@ -71,7 +71,6 @@ namespace Microsoft.Extensions.DependencyInjection
                     config.Configure(setupAction);
                     config.AddOptions();
                     config.AddSingleton(resolver => resolver.GetRequiredService<IOptions<BasicHttpServiceOptions>>().Value);
-                    config.AddTransient<RestHttpClient>();
                 });
     }
 }

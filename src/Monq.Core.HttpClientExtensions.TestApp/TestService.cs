@@ -12,7 +12,7 @@ namespace Monq.Core.HttpClientExtensions.TestApp
         Task<TestModel> TestApi();
     }
 
-    public class TestService : BasicSingleHttpService<ServiceUriOptions>, ITestService
+    public class TestService : RestHttpClientFromOptions<ServiceUriOptions>, ITestService
     {
         /// <summary>
         /// Инициализирует новый экземпляр класса <see cref="TestService" />.
