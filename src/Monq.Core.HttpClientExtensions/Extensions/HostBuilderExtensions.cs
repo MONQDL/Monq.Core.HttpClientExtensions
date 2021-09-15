@@ -64,13 +64,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <param name="hostBuilder">Сборщик универсального узла приложения.</param>
         /// <param name="setupAction">Конфигуратор базового http-клиента.</param>
-        public static IHostBuilder ConfigBasicHttpService(this IHostBuilder hostBuilder, Action<BasicHttpServiceOptions> setupAction) =>
+        public static IHostBuilder ConfigBasicHttpService(this IHostBuilder hostBuilder, Action<RestHttpClientOptions> setupAction) =>
             hostBuilder
                 .ConfigureServices((builderContext, config) =>
                 {
                     config.Configure(setupAction);
                     config.AddOptions();
-                    config.AddSingleton(resolver => resolver.GetRequiredService<IOptions<BasicHttpServiceOptions>>().Value);
+                    config.AddSingleton(resolver => resolver.GetRequiredService<IOptions<RestHttpClientOptions>>().Value);
                 });
     }
 }

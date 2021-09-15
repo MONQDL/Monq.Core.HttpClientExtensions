@@ -5,7 +5,7 @@ using System;
 using System.Linq;
 using System.Net.Http;
 
-namespace Monq.Core.HttpClientExtensions.Services
+namespace Monq.Core.HttpClientExtensions
 {
     /// <summary>
     /// Базовый тип Http сервиса, который имеет единую точку доступа в виде BaseUri.
@@ -29,7 +29,7 @@ namespace Monq.Core.HttpClientExtensions.Services
         public RestHttpClientFromOptions(
             HttpClient httpClient,
             ILoggerFactory loggerFactory,
-            BasicHttpServiceOptions configuration,
+            RestHttpClientOptions configuration,
             IHttpContextAccessor httpContextAccessor,
             string baseUri) : base(httpClient, loggerFactory, configuration, httpContextAccessor)
         {
@@ -53,7 +53,7 @@ namespace Monq.Core.HttpClientExtensions.Services
             IOptions<TOptions> optionsAccessor,
             HttpClient httpClient,
             ILoggerFactory loggerFactory,
-            BasicHttpServiceOptions configuration,
+            RestHttpClientOptions configuration,
             IHttpContextAccessor httpContextAccessor,
             string baseUri) : this(httpClient, loggerFactory, configuration, httpContextAccessor, baseUri)
         {

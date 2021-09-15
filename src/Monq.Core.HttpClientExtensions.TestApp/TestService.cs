@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Monq.Core.HttpClientExtensions.Services;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -27,7 +26,7 @@ namespace Monq.Core.HttpClientExtensions.TestApp
             IOptions<ServiceUriOptions> optionsAccessor,
             HttpClient httpClient,
             ILoggerFactory loggerFactory,
-            BasicHttpServiceOptions configuration,
+            RestHttpClientOptions configuration,
             IHttpContextAccessor httpContextAccessor) :
             base(optionsAccessor,
                 httpClient,

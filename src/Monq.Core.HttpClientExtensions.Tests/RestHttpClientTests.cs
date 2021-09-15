@@ -28,7 +28,7 @@ namespace Monq.Core.HttpClientExtensions.Tests
 
         readonly IList<StubLogger> _loggers = new List<StubLogger>();
         readonly ILoggerFactory _loggerFactory;
-        readonly BasicHttpServiceOptions _configuration = new BasicHttpServiceOptions();
+        readonly RestHttpClientOptions _configuration = new RestHttpClientOptions();
 
         public RestHttpClientTests()
         {
@@ -36,7 +36,7 @@ namespace Monq.Core.HttpClientExtensions.Tests
             RestHttpClient.ResetAccessToken();
             RestHttpClient.ResetAuthorizationRequestHandler();
 
-            _configuration.ConfigHeaders(new BasicHttpServiceHeaderOptions()
+            _configuration.ConfigHeaders(new RestHttpClientHeaderOptions()
             {
                 ForwardedHeaders = new HashSet<string>() { TraceEventIdHeader, UserspaceIdHeader }
             });
@@ -88,10 +88,10 @@ namespace Monq.Core.HttpClientExtensions.Tests
             httpContext.Request.Headers.Add(TraceEventIdHeader, traceEventId);
             httpContext.Request.Headers.Add(UserspaceIdHeader, userspaceId);
 
-            var headerOptions = new BasicHttpServiceHeaderOptions();
+            var headerOptions = new RestHttpClientHeaderOptions();
             headerOptions.AddForwardedHeader(TraceEventIdHeader);
             headerOptions.AddForwardedHeader(UserspaceIdHeader);
-            var conf = new BasicHttpServiceOptions();
+            var conf = new RestHttpClientOptions();
             conf.ConfigHeaders(headerOptions);
 
             var client = new HttpClient(CreateDefaultResponseHandler(HttpStatusCode.OK, modelJson));
@@ -361,10 +361,10 @@ namespace Monq.Core.HttpClientExtensions.Tests
 
             const string uri = "http://unittest/api/services";
 
-            var headerOptions = new BasicHttpServiceHeaderOptions();
+            var headerOptions = new RestHttpClientHeaderOptions();
             headerOptions.AddForwardedHeader(TraceEventIdHeader);
             headerOptions.AddForwardedHeader(UserspaceIdHeader);
-            var conf = new BasicHttpServiceOptions();
+            var conf = new RestHttpClientOptions();
             conf.ConfigHeaders(headerOptions);
 
             var httpContext = new DefaultHttpContext();
@@ -388,7 +388,7 @@ namespace Monq.Core.HttpClientExtensions.Tests
 
         RestHttpClientMock CreateRestHttpClient(HttpClient httpClient,
             HttpContext? httpContext = null,
-            BasicHttpServiceOptions? configuration = null)
+            RestHttpClientOptions? configuration = null)
         {
             return new RestHttpClientMock(
                        httpClient,

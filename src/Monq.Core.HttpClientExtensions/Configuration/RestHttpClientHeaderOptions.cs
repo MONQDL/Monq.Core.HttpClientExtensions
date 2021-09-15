@@ -5,7 +5,7 @@ namespace Monq.Core.HttpClientExtensions
     /// <summary>
     /// Конфигурация обработки http-заголовков.
     /// </summary>
-    public class BasicHttpServiceHeaderOptions
+    public class RestHttpClientHeaderOptions
     {
         /// <summary>
         /// Список названий заголовков, которые будут проброшены на нижестоящий сервис при вызове методов HttpClientExtensions.
@@ -22,7 +22,7 @@ namespace Monq.Core.HttpClientExtensions
         /// Добавить заголовок в список заголовков, которые будут проброшены на нижестоящий сервис при вызове методов HttpClientExtensions.
         /// </summary>
         /// <param name="header">Название заголовка.</param>
-        public BasicHttpServiceHeaderOptions AddForwardedHeader(string header)
+        public RestHttpClientHeaderOptions AddForwardedHeader(string header)
         {
             if (!ForwardedHeaders.Contains(header))
                 ForwardedHeaders.Add(header);

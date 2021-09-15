@@ -26,7 +26,7 @@ If you want to forward headers from upstream requests (`HttpContext.Request`) to
 ```csharp
 hostBuilder.ConfigBasicHttpService(opts =>
 {
-    var headerOptions = new BasicHttpServiceHeaderOptions();
+    var headerOptions = new RestHttpClientHeaderOptions();
     headerOptions.AddForwardedHeader(MicroserviceConstants.EventIdHeader);
     headerOptions.AddForwardedHeader(MicroserviceConstants.UserspaceIdHeader);
 
@@ -186,7 +186,7 @@ public class DefaultRemoteServiceApiHttpService : RestHttpClientFromOptions<Serv
     public DefaultRemoteServiceApiHttpService(IOptions<ServiceUriOptions> optionsAccessor,
             HttpClient httpClient,
             ILoggerFactory loggerFactory,
-            BasicHttpServiceOptions configuration,
+            RestHttpClientOptions configuration,
             IHttpContextAccessor httpContextAccessor)
         : base(optionsAccessor,
                 httpClient,
@@ -233,7 +233,7 @@ public class CachedRemoteServiceApiHttpService : RestHttpClientFromOptions<Servi
     public CachedRemoteServiceApiHttpService(IOptions<ServiceUriOptions> optionsAccessor,
             HttpClient httpClient,
             ILoggerFactory loggerFactory,
-            BasicHttpServiceOptions configuration,
+            RestHttpClientOptions configuration,
             IHttpContextAccessor httpContextAccessor 
             IMemoryCache memoryCache)
         : base(optionsAccessor,
@@ -368,3 +368,15 @@ public class DefaultRemoteServiceApiHttpServiceTests
 	}
 }
 ```
+
+### Migration Guide from v4 to v5
+
+In the v5 the library was changed a lot. So you must follow migration steps.
+
+1. Update the library itself in the csproj.
+2. Rename all classes `BasicHttpService` to `RestHttpClient`.
+3. Rename all classes `BasicSingleHttpService` to `RestHttpClientFromOptions`.
+4. Rename all userspaces `using Monq.Core.HttpClientExtensions.Services;` to `using Monq.Core.HttpClientExtensions;`.
+5. Change all constructors for inherited classes from `RestHttpClient` and `RestHttpClientFromOptions` to its coresponding versions.
+6. In the Startup.cs change `services.AddTransient<IService, Service>()` to `servicese.AddHttpClient<IService, Service>()` for all http services inherited from the `RestHttpClient` and `RestHttpClientFromOptions`.
+7. Change all unit tests to the new version described in the [Testing features](#testing-features).

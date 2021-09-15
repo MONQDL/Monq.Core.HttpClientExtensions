@@ -82,7 +82,7 @@ namespace Monq.Core.HttpClientExtensions
         /// <value>
         /// The configuration.
         /// </value>
-        public BasicHttpServiceOptions Configuration { get; }
+        public RestHttpClientOptions Configuration { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RestHttpClient"/> class.
@@ -93,7 +93,7 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="httpContextAccessor">The HTTP context accessor.</param>
         public RestHttpClient(HttpClient httpClient,
             ILoggerFactory loggerFactory,
-            BasicHttpServiceOptions configuration,
+            RestHttpClientOptions configuration,
             IHttpContextAccessor? httpContextAccessor)
         {
             _httpClient = httpClient;

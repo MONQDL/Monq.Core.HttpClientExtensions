@@ -15,7 +15,7 @@ namespace Monq.Core.HttpClientExtensions.TestApp
             Host.CreateDefaultBuilder(args)
                 .ConfigBasicHttpService(opts =>
                 {
-                    var headerOptions = new BasicHttpServiceHeaderOptions();
+                    var headerOptions = new RestHttpClientHeaderOptions();
                     headerOptions.AddForwardedHeader("X-Trace-Event-Id");
                     headerOptions.AddForwardedHeader("Accept-Language");
                     opts.ConfigHeaders(headerOptions);

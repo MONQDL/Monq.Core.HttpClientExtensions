@@ -26,7 +26,7 @@ namespace Monq.Core.HttpClientExtensions.Tests
                 };
 
         readonly ILoggerFactory _loggerFactory = new StubLoggerFactory(new List<StubLogger>());
-        readonly BasicHttpServiceOptions _configuration = new BasicHttpServiceOptions();
+        readonly RestHttpClientOptions _configuration = new RestHttpClientOptions();
 
         public RestHttpClientFromOptionsTests()
         {
