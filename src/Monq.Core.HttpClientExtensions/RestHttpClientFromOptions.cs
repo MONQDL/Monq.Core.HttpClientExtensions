@@ -8,13 +8,13 @@ using System.Net.Http;
 namespace Monq.Core.HttpClientExtensions
 {
     /// <summary>
-    /// Базовый тип Http сервиса, который имеет единую точку доступа в виде BaseUri.
+    /// Basic type of Http service that has a single access point in the form of BaseUri.
     /// </summary>
     public class RestHttpClientFromOptions<TOptions> : RestHttpClient
         where TOptions : class, new()
     {
         /// <summary>
-        /// Базовый Uri Http сервиса.
+        /// Base Uri Http service.
         /// </summary>
         protected string BaseUri { get; }
 

@@ -3,25 +3,26 @@
 namespace Monq.Core.HttpClientExtensions
 {
     /// <summary>
-    /// Конфигурация обработки http-заголовков.
+    /// Configuration of handling http-headers.
     /// </summary>
     public class RestHttpClientHeaderOptions
     {
         /// <summary>
-        /// Список названий заголовков, которые будут проброшены на нижестоящий сервис при вызове методов HttpClientExtensions.
+        /// The list of header names that will be forwarded to the downstream service 
+        /// when calling the HttpClientExtensions methods.
         /// </summary>
         public HashSet<string> ForwardedHeaders { get; set; } = new HashSet<string>();
 
         /// <summary>
-        /// Флаг устанавливает поведение, при котором значения заголовков, пробрасываемые через <see cref="ForwardedHeaders"/> будет отображено в логах.
-        /// По умолчанию true.
+        /// The flag sets the behavior when header values passed through <see cref = "ForwardedHeaders" /> will be displayed in the logs.
+        /// The default is true.
         /// </summary>
         public bool LogForwardedHeaders { get; set; } = true;
 
         /// <summary>
-        /// Добавить заголовок в список заголовков, которые будут проброшены на нижестоящий сервис при вызове методов HttpClientExtensions.
+        /// Add the header to the list of headers that will be forwarded to the downstream service when calling the HttpClientExtensions methods.
         /// </summary>
-        /// <param name="header">Название заголовка.</param>
+        /// <param name="header">Header name.</param>
         public RestHttpClientHeaderOptions AddForwardedHeader(string header)
         {
             if (!ForwardedHeaders.Contains(header))

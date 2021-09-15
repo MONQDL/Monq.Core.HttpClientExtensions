@@ -6,43 +6,43 @@ using System.Threading.Tasks;
 namespace Monq.Core.HttpClientExtensions.Extensions
 {
     /// <summary>
-    /// Методы расширения для базового http-клиента (<see cref="RestHttpClient"/>).
+    /// Extension methods for a basic http client (<see cref = "HttpClient" />).
     /// </summary>
     static class HttpClientExtensions
     {
         /// <summary>
-        /// Выполнить Http POST запрос по адресу <paramref name="uri"/> и телом запроса <paramref name="value"/>.
+        /// Execute an Http POST request to the address <paramref name = "uri" /> and the request body <paramref name = "value" />.
         /// </summary>
-        /// <param name="httpClient"></param>
-        /// <param name="uri">Адрес запроса.</param>
-        /// <param name="value">Тело запроса.</param>
+        /// <param name="httpClient">The HttpClient.</param>
+        /// <param name="uri">The request uri.</param>
+        /// <param name="value">The request body.</param>
         public static Task<HttpResponseMessage> PostAsJsonAsync(this HttpClient httpClient, string uri, object value) =>
             MakeRequest(httpClient, "POST", uri, value);
 
         /// <summary>
-        /// Выполнить Http PUT запрос по адресу <paramref name="uri"/> и телом запроса <paramref name="value"/>.
+        /// Execute an Http PUT request to the address <paramref name = "uri" /> and the request body <paramref name = "value" />.
         /// </summary>
-        /// <param name="httpClient"></param>
-        /// <param name="uri">Адрес запроса.</param>
-        /// <param name="value">Тело запроса.</param>
+        /// <param name="httpClient">The HttpClient.</param>
+        /// <param name="uri">The request uri.</param>
+        /// <param name="value">The request body.</param>
         public static Task<HttpResponseMessage> PutAsJsonAsync(this HttpClient httpClient, string uri, object value) =>
             MakeRequest(httpClient, "PUT", uri, value);
 
         /// <summary>
-        /// Выполнить Http PATCH запрос по адресу <paramref name="uri"/> и телом запроса <paramref name="value"/>.
+        /// Execute an Http PATCH request at the address <paramref name = "uri" /> and with the request body <paramref name = "value" />.
         /// </summary>
-        /// <param name="httpClient"></param>
-        /// <param name="uri">Адрес запроса.</param>
-        /// <param name="value">Тело запроса.</param>
+        /// <param name="httpClient">The HttpClient.</param>
+        /// <param name="uri">The request uri.</param>
+        /// <param name="value">The request body.</param>
         public static Task<HttpResponseMessage> PatchAsJsonAsync(this HttpClient httpClient, string uri, object value) =>
             MakeRequest(httpClient, "PATCH", uri, value);
 
         /// <summary>
-        /// Выполнить Http DELETE запрос по адресу <paramref name="uri"/> и телом запроса <paramref name="value"/>.
+        /// Execute an Http DELETE request to the address <paramref name = "uri" /> and the request body <paramref name = "value" />.
         /// </summary>
-        /// <param name="httpClient"></param>
-        /// <param name="uri">Адрес запроса.</param>
-        /// <param name="value">Тело запроса.</param>
+        /// <param name="httpClient">The HttpClient.</param>
+        /// <param name="uri">The request uri.</param>
+        /// <param name="value">The request body.</param>
         public static Task<HttpResponseMessage> DeleteAsJsonAsync(this HttpClient httpClient, string uri, object value) =>
             MakeRequest(httpClient, "DELETE", uri, value);
 

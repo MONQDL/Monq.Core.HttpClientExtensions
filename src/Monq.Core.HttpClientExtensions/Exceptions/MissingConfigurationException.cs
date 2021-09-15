@@ -17,9 +17,5 @@ namespace Monq.Core.HttpClientExtensions.Exceptions
         public MissingConfigurationException(string message, Exception? innerException) : base(message, innerException)
         {
         }
-
-        protected MissingConfigurationException(SerializationInfo info, in StreamingContext context) : base(info, context)
-        {
-        }
     }
 }

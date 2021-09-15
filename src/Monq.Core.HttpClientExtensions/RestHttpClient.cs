@@ -17,16 +17,15 @@ using System.Threading.Tasks;
 namespace Monq.Core.HttpClientExtensions
 {
     /// <summary>
-    /// Стек обработчика HTTP-данных,
-    /// используемый для отправки запросов с расширенным использованием логирования и набором упрощённых правил запроса.
+    /// The HTTP data handler stack used to send requests with advanced logging and a set of simplified request rules.
     /// </summary>
     /// <seealso cref="HttpClient" />
-    public class RestHttpClient
+    public partial class RestHttpClient
     {
         static readonly object LockObj = new object();
 
         /// <summary>
-        /// Семафор для синхронизации потоков получения AccessToken.
+        /// Semaphore for synchronizing AccessToken receiving streams.
         /// </summary>
         static readonly SemaphoreSlim SemaphoreSlim = new SemaphoreSlim(1, 1);
 
@@ -49,17 +48,17 @@ namespace Monq.Core.HttpClientExtensions
         public HttpClient HttpClient => _httpClient;
 
         /// <summary>
-        /// Access Token, который будет использоваться при Http запросах.
+        /// Access Token to be used for Http requests.
         /// </summary>
         public static TokenResponse? AccessToken { get; private set; }
 
         /// <summary>
-        /// Обработчик события для получения AccessToken.
+        /// An event handler for getting the AccessToken.
         /// </summary>
         public delegate Task<TokenResponse> AuthorizationRequestHandler(HttpClient client);
 
         /// <summary>
-        /// При вызове данного события требуется получить AccessToken от Identity сервера.
+        /// When this event is called, it is required to obtain an AccessToken from the Identity of the server.
         /// </summary>
         public static event AuthorizationRequestHandler? AuthorizationRequest;
 
@@ -67,7 +66,7 @@ namespace Monq.Core.HttpClientExtensions
         const string AuthorizationHeader = "Authorization";
 
         /// <summary>
-        /// Логгер.
+        /// The logger factory.
         /// </summary>
         public ILoggerFactory LoggerFactory { get; }
 
@@ -123,64 +122,64 @@ namespace Monq.Core.HttpClientExtensions
         }
 
         /// <summary>
-        /// Выполнить HTTP DELETE запрос, и вернуть результат десериализованный в тип <typeparamref name="TResult"/>.
+        /// Execute an HTTP DELETE request, and return the result deserialized to type <typeparamref name = "TResult" />.
         /// </summary>
-        /// <typeparam name="TResult">Тип результата.</typeparam>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
+        /// <typeparam name="TResult">The Result type.</typeparam>
+        /// <param name="uri">The Uri of the service being called.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <exception cref="ResponseException"></exception>
         public Task<RestHttpResponseMessage<TResult?>> Delete<TResult>(string uri, CancellationToken cancellationToken = default) =>
             MakeRequestWithoutBody<TResult?>("DELETE", uri, cancellationToken);
 
         /// <summary>
-        /// Выполнить HTTP DELETE запрос, результат не возвращать.
+        /// Execute an HTTP DELETE request, return no result.
         /// </summary>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
+        /// <param name="uri">The Uri of the service being called.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <exception cref="ResponseException"></exception>
         public Task Delete(string uri, CancellationToken cancellationToken = default) =>
            MakeRequestWithoutBody("DELETE", uri, cancellationToken);
 
         /// <summary>
-        /// Выполнить HTTP DELETE запрос c телом типа <typeparamref name="TRequest"/>, результат не возвращать.
+        /// Execute an HTTP DELETE request with a body of type <typeparamref name = "TRequest" />, do not return the result.
         /// </summary>
-        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
-        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
+        /// <typeparam name="TRequest">The Request body type.</typeparam>
+        /// <param name="uri">The Uri of the service being called.</param>
+        /// <param name="value">The object to serialize as the request body.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <exception cref="ResponseException"></exception>
         public Task Delete<TRequest>(string uri, TRequest value, CancellationToken cancellationToken = default) =>
             MakeRequestWithBody<TRequest, object>("DELETE", uri, value, cancellationToken);
 
         /// <summary>
-        /// Выполнить HTTP Get запрос и вернуть результат десериализованный в тип <typeparamref name="TResult"/>.
+        /// Execute an HTTP Get request and return the result deserialized to type <typeparamref name = "TResult" />.
         /// </summary>
-        /// <typeparam name="TResult">Тип результата запроса.</typeparam>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
+        /// <typeparam name="TResult">The query result type.</typeparam>
+        /// <param name="uri">The Uri of the service being called.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <exception cref="ResponseException"></exception>
         public Task<RestHttpResponseMessage<TResult?>> Get<TResult>(string uri, CancellationToken cancellationToken = default) =>
             MakeRequestWithoutBody<TResult>("GET", uri, cancellationToken);
 
         /// <summary>
-        /// Выполнить HTTP PATCH запрос c телом типа <typeparamref name="TRequest"/>, результат не возвращать.
+        /// Execute an HTTP PATCH request with a body of type <typeparamref name = "TRequest" />, do not return the result.
         /// </summary>
-        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
-        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
+        /// <typeparam name="TRequest">The Request body type.</typeparam>
+        /// <param name="uri">The Uri of the service being called.</param>
+        /// <param name="value">The object to serialize as the request body.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <exception cref="ResponseException"></exception>
         public Task Patch<TRequest>(string uri, TRequest value, CancellationToken cancellationToken = default) =>
             MakeRequestWithBody("PATCH", uri, value, cancellationToken);
 
         /// <summary>
-        /// Выполнить HTTP PATCH запрос c телом типа <typeparamref name="TRequest"/> 
-        /// и вернуть результат десериализованный в тип <typeparamref name="TResult"/>.
+        /// Execute an HTTP PATCH request with a body of type <typeparamref name = "TRequest" /> 
+        /// and return the result deserialized to type <typeparamref name = "TResult" />.
         /// </summary>
-        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
-        /// <typeparam name="TResult">Тип результата.</typeparam>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
-        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
+        /// <typeparam name="TRequest">The Request body type.</typeparam>
+        /// <typeparam name="TResult">The Result type.</typeparam>
+        /// <param name="uri">The Uri of the service being called.</param>
+        /// <param name="value">The object to serialize as the request body.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <exception cref="ResponseException"></exception>
         public Task<RestHttpResponseMessage<TResult?>> Patch<TRequest, TResult>(string uri,
@@ -189,13 +188,13 @@ namespace Monq.Core.HttpClientExtensions
             MakeRequestWithBody<TRequest, TResult?>("PATCH", uri, value, cancellationToken);
 
         /// <summary>
-        /// Выполнить HTTP POST запрос c телом типа <typeparamref name="TRequest"/> 
-        /// и вернуть результат десериализованный в тип <typeparamref name="TResult"/>.
+        /// Execute an HTTP POST request with a body of type <typeparamref name = "TRequest" /> 
+        /// and return the result deserialized to type <typeparamref name = "TResult" />.
         /// </summary>
-        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
-        /// <typeparam name="TResult">Тип результата.</typeparam>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
-        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
+        /// <typeparam name="TRequest">The Request body type.</typeparam>
+        /// <typeparam name="TResult">The Result type.</typeparam>
+        /// <param name="uri">The Uri of the service being called.</param>
+        /// <param name="value">The object to serialize as the request body.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <exception cref="ResponseException"></exception>
         public Task<RestHttpResponseMessage<TResult?>> Post<TRequest, TResult>(string uri,
@@ -204,24 +203,24 @@ namespace Monq.Core.HttpClientExtensions
             MakeRequestWithBody<TRequest, TResult?>("POST", uri, value, cancellationToken);
 
         /// <summary>
-        /// Выполнить HTTP POST запрос c телом типа <typeparamref name="TRequest"/>, результат не возвращать.
+        /// Execute an HTTP POST request with a body of type <typeparamref name = "TRequest" />, do not return the result.
         /// </summary>
-        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
-        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
+        /// <typeparam name="TRequest">The Request body type.</typeparam>
+        /// <param name="uri">The Uri of the service being called.</param>
+        /// <param name="value">The object to serialize as the request body.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <exception cref="ResponseException"></exception>
         public Task Post<TRequest>(string uri, TRequest value, CancellationToken cancellationToken = default) =>
             MakeRequestWithBody("POST", uri, value, cancellationToken);
 
         /// <summary>
-        /// Выполнить HTTP PUT запрос c телом типа <typeparamref name="TRequest"/> 
-        /// и вернуть результат десериализованный в тип <typeparamref name="TResult"/>.
+        /// Execute an HTTP PUT request with a body of type <typeparamref name = "TRequest" /> 
+        /// and return the result deserialized to type <typeparamref name = "TResult" />.
         /// </summary>
-        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
-        /// <typeparam name="TResult">Тип результата.</typeparam>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
-        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
+        /// <typeparam name="TRequest">The Request body type.</typeparam>
+        /// <typeparam name="TResult">The Result type.</typeparam>
+        /// <param name="uri">The Uri of the service being called.</param>
+        /// <param name="value">The object to serialize as the request body.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <exception cref="ResponseException"></exception>
         public Task<RestHttpResponseMessage<TResult?>> Put<TRequest, TResult>(string uri,
@@ -230,11 +229,11 @@ namespace Monq.Core.HttpClientExtensions
             MakeRequestWithBody<TRequest, TResult?>("PUT", uri, value, cancellationToken);
 
         /// <summary>
-        /// Выполнить HTTP PUT запрос c телом типа <typeparamref name="TRequest"/>, результат не возвращать.
+        /// Execute an HTTP PUT request with a body of type <typeparamref name = "TRequest" />, do not return the result.
         /// </summary>
-        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
-        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
+        /// <typeparam name="TRequest">The Request body type.</typeparam>
+        /// <param name="uri">The Uri of the service being called.</param>
+        /// <param name="value">The object to serialize as the request body.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <exception cref="ResponseException"></exception>
         public Task Put<TRequest>(string uri, TRequest value, CancellationToken cancellationToken = default) =>
@@ -254,8 +253,8 @@ namespace Monq.Core.HttpClientExtensions
                 return AccessToken;
 
             // Obtain new token.
-            // Если одновременно несколько потоков попытаются вызвать метод получения Access токена,
-            // то доступ дадим только одному.
+            // If several threads try to call the method for obtaining the Access token at the same time,
+            // we will give access to only one.
             await SemaphoreSlim.WaitAsync();
             var sw = new Stopwatch();
             sw.Start();
@@ -274,11 +273,11 @@ namespace Monq.Core.HttpClientExtensions
                     throw new SecurityTokenException("Could not retrieve token.");
                 }
 
-                //set Token to the new token and set the expiry time to the new expiry time
+                // Set Token to the new token and set the expiry time to the new expiry time.
                 AccessToken = accessTokenResponse;
                 ExpiryTime = DateTime.UtcNow.AddSeconds(AccessToken.ExpiresIn);
 
-                //return fresh token
+                // Return fresh token.
                 return AccessToken;
             }
             catch (Exception e)
@@ -306,7 +305,7 @@ namespace Monq.Core.HttpClientExtensions
         }
 
         /// <summary>
-        /// Удалить всех подписчиков события AuthorizationRequest.
+        /// Remove all subscribers to the AuthorizationRequest event.
         /// </summary>
         public static void ResetAuthorizationRequestHandler()
         {
@@ -451,7 +450,7 @@ namespace Monq.Core.HttpClientExtensions
 
             var sw = new Stopwatch();
             sw.Start();
-            // Выполняем проброс указанных заголовков в опциях в нижестоящие сервисы.
+            // Forward the specified headers in the options to the downstream services.
             PassThroughForwardedHeaders();
 
             var fullUri = GetAbsoluteUri(uri);
@@ -473,11 +472,11 @@ namespace Monq.Core.HttpClientExtensions
                 response = await _httpClient.SendAsync(request, cts);
                 response.RequestMessage = request;
 
-                // Перезапросить токен при ответе 401
+                // Refresh token on 401 response.
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     await SetToken(true);
-                    // Нельзя послать 2 раза одинаковый запрос.
+                    // You cannot send the same request 2 times.
                     var request2 = new HttpRequestMessage(method, uri);
                     response = await _httpClient.SendAsync(request2, cts);
                     response.RequestMessage = request2;
@@ -514,7 +513,7 @@ namespace Monq.Core.HttpClientExtensions
 
             var sw = new Stopwatch();
             sw.Start();
-            // Выполняем проброс указанных заголовков в опциях в нижестоящие сервисы.
+            // Forward the specified headers in the options to the downstream services.
             PassThroughForwardedHeaders();
 
             var fullUri = GetAbsoluteUri(uri);
@@ -532,11 +531,11 @@ namespace Monq.Core.HttpClientExtensions
                 response = await _httpClient.SendAsync(request, cts);
                 response.RequestMessage = request;
 
-                // Перезапросить токен при ответе 401
+                // Refresh token on 401 response.
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     await SetToken(true);
-                    // Нельзя послать 2 раза одинаковый запрос.
+                    // You cannot send the same request 2 times.
                     var request2 = new HttpRequestMessage(method, uri);
                     response = await _httpClient.SendAsync(request2, cts);
                     response.RequestMessage = request2;

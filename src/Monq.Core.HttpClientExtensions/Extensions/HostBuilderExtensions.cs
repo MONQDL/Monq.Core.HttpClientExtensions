@@ -1,5 +1,4 @@
 ﻿using IdentityModel.Client;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Monq.Core.HttpClientExtensions;
@@ -10,14 +9,14 @@ using static Monq.Core.HttpClientExtensions.AuthConstants;
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
-    /// Методы расширения для сборщика универсального узла приложения (<see cref="IHostBuilder"/>).
+    /// Extension methods for the generic app host builder (<see cref = "IHostBuilder" />).
     /// </summary>
     public static class HostBuilderExtensions
     {
         const string WriteScope = "write";
 
         /// <summary>
-        /// Выполнить конфигурацию статического метода аутентификации, который будет выполнен при первом запросе HttpClient.
+        /// Configure a static authentication method that will be executed on the first HttpClient request.
         /// </summary>
         /// <param name="hostBuilder">The host builder.</param>
         public static IHostBuilder ConfigureStaticAuthentication(this IHostBuilder hostBuilder) =>
@@ -26,13 +25,12 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     var authEndpoint = $"{Authentication.AuthenticationSection}:{Authentication.AuthenticationEndpoint}";
                     if (string.IsNullOrEmpty(builderContext.Configuration[authEndpoint]))
-                        throw new MissingConfigurationException("Не найдена конфигурация { \"Authentication\": {...} } в загруженных провайдерах конфигураций.");
+                        throw new MissingConfigurationException("No configuration found { \"Authentication \": {...}} in loaded configuration providers.");
 
                     var configuration = builderContext.Configuration;
                     RestHttpClient.AuthorizationRequest += async (client) =>
                     {
-                        // TODO: Вынести хардкод в опции и Default конфигурацию.
-                        // Вынести хардкод в опции и Default конфигурацию.
+                        // TODO: Take out the hardcode in options and Default configuration.
                         var authConfig = configuration.GetSection(Authentication.AuthenticationSection);
 
                         if (!bool.TryParse(authConfig[Authentication.RequireHttpsMetadata], out var requireHttps))
@@ -60,10 +58,10 @@ namespace Microsoft.Extensions.DependencyInjection
                 });
 
         /// <summary>
-        /// Применить конфигурацию обработки http-запроса для <see cref="RestHttpClient"/>.
+        /// Apply http request processing configuration for <see cref = "RestHttpClient" />.
         /// </summary>
-        /// <param name="hostBuilder">Сборщик универсального узла приложения.</param>
-        /// <param name="setupAction">Конфигуратор базового http-клиента.</param>
+        /// <param name="hostBuilder">Generic Application Host Builder.</param>
+        /// <param name="setupAction">Basic http client configurator.</param>
         public static IHostBuilder ConfigBasicHttpService(this IHostBuilder hostBuilder, Action<RestHttpClientOptions> setupAction) =>
             hostBuilder
                 .ConfigureServices((builderContext, config) =>

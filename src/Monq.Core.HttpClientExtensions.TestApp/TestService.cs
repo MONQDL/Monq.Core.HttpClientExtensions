@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -39,7 +40,7 @@ namespace Monq.Core.HttpClientExtensions.TestApp
 
         public async Task<TestModel> TestApi()
         {
-            var result = await Get<TestModel>("posts/1");
+            var result = await Get<TestModel>("posts/1", TimeSpan.FromSeconds(10));
 
             return result.ResultObject!;
         }

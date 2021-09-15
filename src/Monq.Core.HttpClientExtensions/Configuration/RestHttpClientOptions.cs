@@ -1,19 +1,20 @@
 ﻿namespace Monq.Core.HttpClientExtensions
 {
     /// <summary>
-    /// Конфигурация базового http-клиента.
+    /// Basic http client configuration.
     /// </summary>
     public class RestHttpClientOptions
     {
         /// <summary>
-        /// Конфигурация обработки http-заголовков.
+        /// Configuration of handling http-headers.
         /// </summary>
-        public RestHttpClientHeaderOptions RestHttpClientHeaderOptions { get; protected set; } = new RestHttpClientHeaderOptions();
+        public RestHttpClientHeaderOptions RestHttpClientHeaderOptions { get; protected set; } = 
+            new RestHttpClientHeaderOptions();
 
         /// <summary>
-        /// Выполнить настройку обработки заголовков запросов.
+        /// Configure processing of request headers.
         /// </summary>
-        /// <param name="options">Конфигурация обработки http-заголовков.</param>
+        /// <param name="options">Configuration of handling http-headers.</param>
         public void ConfigHeaders(RestHttpClientHeaderOptions options) =>
             RestHttpClientHeaderOptions = options;
     }

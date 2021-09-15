@@ -11,17 +11,6 @@ namespace Monq.Core.HttpClientExtensions.Exceptions
 
         }
 
-        /// <summary>Initializes a new instance of the <see cref="DiscoveryEndpointException" /> class with serialized data.</summary>
-        /// <param name="info">The <see cref="SerializationInfo" /> that holds the serialized object data about the exception being thrown.</param>
-        /// <param name="context">The <see cref="StreamingContext" /> that contains contextual information about the source or destination.</param>
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="info" /> is <see langword="null" />.</exception>
-        /// <exception cref="SerializationException">The class name is <see langword="null" /> or <see cref="System.Exception.HResult" /> is zero (0).</exception>
-        protected DiscoveryEndpointException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-
-        }
-
         /// <summary>Initializes a new instance of the <see cref="DiscoveryEndpointException" /> class with a specified error message.</summary>
         /// <param name="message">The message that describes the error.</param>
         public DiscoveryEndpointException(string message) : base(message)

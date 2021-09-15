@@ -4,25 +4,25 @@ using System.Net;
 namespace Monq.Core.HttpClientExtensions.Exceptions
 {
     /// <summary>
-    /// Класс представляет расширенную версия исключения для обслуживания запросов RestHttpClient
+    /// The class represents an extended version of the exception for serving <see cref="RestHttpClient"/> requests.
     /// </summary>
     public class ResponseException : Exception
     {
         /// <summary>
-        /// Код ответа HttpClient.
+        /// HttpClient response code.
         /// </summary>
         public HttpStatusCode StatusCode { get; }
 
         /// <summary>
-        /// Строка с данными ответа на Http запрос.
+        /// A string with the response data for the Http request.
         /// </summary>
         public string? ResponseData { get; }
 
         /// <summary>
-        /// Инициализирует новый экземпляр класса <see cref="ResponseException" />.
+        /// Initializes a new instance of the class <see cref = "ResponseException" />.
         /// </summary>
-        /// <param name="message">Сообщение, описывающее текущее исключение.</param>
-        /// <param name="statusCode">Код ответа HttpClient.</param>
+        /// <param name="message">A message describing the current exception.</param>
+        /// <param name="statusCode">HttpClient response code.</param>
         public ResponseException(string message, HttpStatusCode statusCode)
             : base(message)
         {
@@ -30,11 +30,11 @@ namespace Monq.Core.HttpClientExtensions.Exceptions
         }
 
         /// <summary>
-        /// Инициализирует новый экземпляр класса <see cref="ResponseException" />.
+        /// Initializes a new instance of the class <see cref = "ResponseException" />.
         /// </summary>
-        /// <param name="message">Сообщение, описывающее текущее исключение.</param>
-        /// <param name="statusCode">Код ответа HttpClient.</param>
-        /// <param name="responseData">Строка с данными ответа на Http запрос.</param>
+        /// <param name="message">A message describing the current exception.</param>
+        /// <param name="statusCode">HttpClient response code.</param>
+        /// <param name="responseData">A string with the response data for the Http request.</param>
         public ResponseException(string message, HttpStatusCode statusCode, string? responseData)
             : this(message, statusCode)
         {

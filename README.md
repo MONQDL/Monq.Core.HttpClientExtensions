@@ -376,7 +376,11 @@ In the v5 the library was changed a lot. So you must follow migration steps.
 1. Update the library itself in the csproj.
 2. Rename all classes `BasicHttpService` to `RestHttpClient`.
 3. Rename all classes `BasicSingleHttpService` to `RestHttpClientFromOptions`.
-4. Rename all userspaces `using Monq.Core.HttpClientExtensions.Services;` to `using Monq.Core.HttpClientExtensions;`.
-5. Change all constructors for inherited classes from `RestHttpClient` and `RestHttpClientFromOptions` to its coresponding versions.
-6. In the Startup.cs change `services.AddTransient<IService, Service>()` to `servicese.AddHttpClient<IService, Service>()` for all http services inherited from the `RestHttpClient` and `RestHttpClientFromOptions`.
-7. Change all unit tests to the new version described in the [Testing features](#testing-features).
+4. Rename all namespaces `using Monq.Core.HttpClientExtensions.Services;` to `using Monq.Core.HttpClientExtensions;`.
+5. Rename all classes `BasicHttpServiceOptions` to `RestHttpClientOptions`.
+6. Rename all classes `BasicHttpServiceHeaderOptions` to `RestHttpClientHeaderOptions`.
+6. Change all constructors for inherited classes from `RestHttpClient` and `RestHttpClientFromOptions` to its coresponding versions.
+7. In the class methods remove all strings `using var client = CreateRestHttpClient();` or `using (var client = CreateRestHttpClient()) { <content must stay> }`.
+8. In the class methods remove remove change all strings `client.Get()` or `client.Post()` and others to just `Get()` or `Post()`.
+8. In the Startup.cs change `services.AddTransient<IService, Service>()` to `servicese.AddHttpClient<IService, Service>()` for all http services inherited from the `RestHttpClient` and `RestHttpClientFromOptions`.
+9. Change all unit tests to the new version described in the [Testing features](#testing-features).
