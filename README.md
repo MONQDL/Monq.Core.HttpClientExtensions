@@ -376,7 +376,7 @@ In the v5 the library was changed a lot. So you must follow migration steps.
 1. Update the library itself in the csproj.
 2. Rename all classes `BasicHttpService` to `RestHttpClient`.
 3. Rename all classes `BasicSingleHttpService` to `RestHttpClientFromOptions`.
-4. Rename all namespaces `using Monq.Core.HttpClientExtensions.Services;` to `using Monq.Core.HttpClientExtensions;`.
+4. Remove all namespace references `Monq.Core.HttpClientExtensions.Services`.
 5. Rename all classes `BasicHttpServiceOptions` to `RestHttpClientOptions`.
 6. Rename all classes `BasicHttpServiceHeaderOptions` to `RestHttpClientHeaderOptions`.
 6. Change all constructors for inherited classes from `RestHttpClient` and `RestHttpClientFromOptions` to its coresponding versions.
