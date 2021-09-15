@@ -1,12 +1,13 @@
 ﻿using IdentityModel.Client;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Monq.Core.HttpClientExtensions.Exceptions;
 using Monq.Core.HttpClientExtensions.Extensions;
-using Monq.Core.HttpClientExtensions.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -16,16 +17,15 @@ using System.Threading.Tasks;
 namespace Monq.Core.HttpClientExtensions
 {
     /// <summary>
-    /// Стек обработчика HTTP-данных,
-    /// используемый для отправки запросов с расширенным использованием логирования и набором упрощённых правил запроса.
+    /// The HTTP data handler stack used to send requests with advanced logging and a set of simplified request rules.
     /// </summary>
     /// <seealso cref="HttpClient" />
-    public class RestHttpClient : HttpClient
+    public partial class RestHttpClient
     {
         static readonly object LockObj = new object();
 
         /// <summary>
-        /// Семафор для синхронизации потоков получения AccessToken.
+        /// Semaphore for synchronizing AccessToken receiving streams.
         /// </summary>
         static readonly SemaphoreSlim SemaphoreSlim = new SemaphoreSlim(1, 1);
 
@@ -33,102 +33,211 @@ namespace Monq.Core.HttpClientExtensions
 
         readonly ILogger<RestHttpClient> _log;
 
+        readonly HttpClient _httpClient;
+
         static DateTime ExpiryTime { get; set; }
 
         /// <summary>
-        /// Access Token, который будет использоваться при Http запросах.
+        /// The default timeout the request will be set if user not specified.
+        /// </summary>
+        public TimeSpan DefaultTimeout => _defaultTimeout;
+
+        /// <summary>
+        /// The actual http client from the IHttpClientFactory.
+        /// </summary>
+        public HttpClient HttpClient => _httpClient;
+
+        /// <summary>
+        /// Access Token to be used for Http requests.
         /// </summary>
         public static TokenResponse? AccessToken { get; private set; }
 
         /// <summary>
-        /// Обработчик события для получения AccessToken.
+        /// An event handler for getting the AccessToken.
         /// </summary>
         public delegate Task<TokenResponse> AuthorizationRequestHandler(HttpClient client);
 
         /// <summary>
-        /// При вызове данного события требуется получить AccessToken от Identity сервера.
+        /// When this event is called, it is required to obtain an AccessToken from the Identity of the server.
         /// </summary>
         public static event AuthorizationRequestHandler? AuthorizationRequest;
 
+        const string BearerIdentifier = "Bearer";
+        const string AuthorizationHeader = "Authorization";
+
         /// <summary>
-        /// Gets the basic HTTP service.
+        /// The logger factory.
+        /// </summary>
+        public ILoggerFactory LoggerFactory { get; }
+
+        /// <summary>
+        /// Encapsulates all HTTP-specific information about an individual HTTP request.
+        /// </summary>
+        public IHttpContextAccessor? HttpContextAccessor { get; }
+
+        /// <summary>
+        /// Gets the configuration.
         /// </summary>
         /// <value>
-        /// The basic HTTP service.
+        /// The configuration.
         /// </value>
-        public BasicHttpService BasicHttpService { get; }
+        public RestHttpClientOptions Configuration { get; }
 
         /// <summary>
-        /// Инициализирует новый экземпляр класса <see cref="RestHttpClient" />.
+        /// Initializes a new instance of the <see cref="RestHttpClient"/> class.
         /// </summary>
-        /// <param name="basicHttpService">The basic HTTP service.</param>
-        public RestHttpClient(BasicHttpService basicHttpService)
+        /// <param name="httpClient">The HttpClient from http client factory.</param>
+        /// <param name="loggerFactory">The logger factory.</param>
+        /// <param name="configuration">The configuration.</param>
+        /// <param name="httpContextAccessor">The HTTP context accessor.</param>
+        public RestHttpClient(HttpClient httpClient,
+            ILoggerFactory loggerFactory,
+            RestHttpClientOptions configuration,
+            IHttpContextAccessor? httpContextAccessor)
         {
-            BasicHttpService = basicHttpService;
-            _log = BasicHttpService.LoggerFactory.CreateLogger<RestHttpClient>();
+            _httpClient = httpClient;
 
-            // Для переиспользования экземпляра HttpClient будем использовать cancellation token для управления таймаутами.
-            // Для этого требуется выставить главный таймаут в максимальное значение, т.к. он будет перекрывать значение,
-            // заданное в cancellation token.
-            Timeout = System.Threading.Timeout.InfiniteTimeSpan;
+            HttpContextAccessor = httpContextAccessor;
+            LoggerFactory = loggerFactory;
+            Configuration = configuration;
+
+            _log = loggerFactory.CreateLogger<RestHttpClient>();
+
+            // To reuse the HttpClient instance, we will use the cancellation token to manage timeouts.
+            // To do this, you need to set the main timeout to the maximum value,
+            // because it will override the value specified in the cancellation token.
+            _httpClient.Timeout = System.Threading.Timeout.InfiniteTimeSpan;
+
+            if (HttpContextAccessor?.HttpContext is not null
+                && HttpContextAccessor.HttpContext.Request.Headers.TryGetValue(AuthorizationHeader, out var authorizeHeader)
+                && !string.IsNullOrEmpty(authorizeHeader))
+            {
+                var token = authorizeHeader.FirstOrDefault();
+                if (token is not null && token.StartsWith(BearerIdentifier, StringComparison.OrdinalIgnoreCase))
+                {
+                    token = token.Replace(BearerIdentifier, string.Empty).TrimStart();
+                    httpClient.SetBearerToken(token);
+                }
+            }
         }
 
         /// <summary>
-        /// Инициализирует новый экземпляр класса <see cref="RestHttpClient" />.
+        /// Execute an HTTP DELETE request, and return the result deserialized to type <typeparamref name = "TResult" />.
         /// </summary>
-        /// <param name="basicHttpService">The basic HTTP service.</param>
-        /// <param name="handler">The handler.</param>
-        public RestHttpClient(BasicHttpService basicHttpService, HttpMessageHandler handler)
-            : base(handler)
-        {
-            BasicHttpService = basicHttpService;
-            _log = BasicHttpService.LoggerFactory.CreateLogger<RestHttpClient>();
-
-            // Для переиспользования экземпляра HttpClient будем использовать cancellation token для управления таймаутами.
-            // Для этого требуется выставить главный таймаут в максимальное значение, т.к. он будет перекрывать значение,
-            // заданное в cancellation token.
-            Timeout = System.Threading.Timeout.InfiniteTimeSpan;
-        }
+        /// <typeparam name="TResult">The Result type.</typeparam>
+        /// <param name="uri">The Uri of the service being called.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <exception cref="ResponseException"></exception>
+        public Task<RestHttpResponseMessage<TResult?>> Delete<TResult>(string uri, CancellationToken cancellationToken = default) =>
+            MakeRequestWithoutBody<TResult?>("DELETE", uri, cancellationToken);
 
         /// <summary>
-        /// Выполнить HTTP DELETE запрос, и вернуть результат десериализованный в тип <typeparamref name="TResult"/>.
+        /// Execute an HTTP DELETE request, return no result.
         /// </summary>
-        /// <typeparam name="TResult">Тип результата.</typeparam>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
-        /// <param name="timeout">Таймаут ожидания ответа.</param>
+        /// <param name="uri">The Uri of the service being called.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <exception cref="ResponseException"></exception>
-        public Task<RestHttpResponseMessage<TResult?>> Delete<TResult>(string uri, TimeSpan timeout = default) =>
-            MakeRequestWithoutBody<TResult>("DELETE", uri, timeout);
+        public Task Delete(string uri, CancellationToken cancellationToken = default) =>
+           MakeRequestWithoutBody("DELETE", uri, cancellationToken);
 
         /// <summary>
-        /// Выполнить HTTP DELETE запрос, результат не возвращать.
+        /// Execute an HTTP DELETE request with a body of type <typeparamref name = "TRequest" />, do not return the result.
         /// </summary>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
-        /// <param name="timeout">Таймаут ожидания ответа.</param>
+        /// <typeparam name="TRequest">The Request body type.</typeparam>
+        /// <param name="uri">The Uri of the service being called.</param>
+        /// <param name="value">The object to serialize as the request body.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <exception cref="ResponseException"></exception>
-        public Task Delete(string uri, TimeSpan timeout = default) =>
-            MakeRequestWithoutBody("DELETE", uri, timeout);
+        public Task Delete<TRequest>(string uri, TRequest value, CancellationToken cancellationToken = default) =>
+            MakeRequestWithBody<TRequest, object>("DELETE", uri, value, cancellationToken);
 
         /// <summary>
-        /// Выполнить HTTP DELETE запрос c телом типа <typeparamref name="TRequest"/>, результат не возвращать.
+        /// Execute an HTTP Get request and return the result deserialized to type <typeparamref name = "TResult" />.
         /// </summary>
-        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
-        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
-        /// <param name="timeout">Таймаут ожидания ответа.</param>
+        /// <typeparam name="TResult">The query result type.</typeparam>
+        /// <param name="uri">The Uri of the service being called.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <exception cref="ResponseException"></exception>
-        public Task Delete<TRequest>(string uri, TRequest value, TimeSpan timeout = default) =>
-            MakeRequestWithBody("DELETE", uri, value, timeout);
+        public Task<RestHttpResponseMessage<TResult?>> Get<TResult>(string uri, CancellationToken cancellationToken = default) =>
+            MakeRequestWithoutBody<TResult>("GET", uri, cancellationToken);
 
         /// <summary>
-        /// Выполнить HTTP Get запрос и вернуть результат десериализованный в тип <typeparamref name="TResult"/>.
+        /// Execute an HTTP PATCH request with a body of type <typeparamref name = "TRequest" />, do not return the result.
         /// </summary>
-        /// <typeparam name="TResult">Тип результата запроса.</typeparam>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
-        /// <param name="timeout">Таймаут ожидания ответа.</param>
+        /// <typeparam name="TRequest">The Request body type.</typeparam>
+        /// <param name="uri">The Uri of the service being called.</param>
+        /// <param name="value">The object to serialize as the request body.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <exception cref="ResponseException"></exception>
-        public Task<RestHttpResponseMessage<TResult?>> Get<TResult>(string uri, TimeSpan timeout = default) =>
-            MakeRequestWithoutBody<TResult?>("GET", uri, timeout);
+        public Task Patch<TRequest>(string uri, TRequest value, CancellationToken cancellationToken = default) =>
+            MakeRequestWithBody("PATCH", uri, value, cancellationToken);
+
+        /// <summary>
+        /// Execute an HTTP PATCH request with a body of type <typeparamref name = "TRequest" /> 
+        /// and return the result deserialized to type <typeparamref name = "TResult" />.
+        /// </summary>
+        /// <typeparam name="TRequest">The Request body type.</typeparam>
+        /// <typeparam name="TResult">The Result type.</typeparam>
+        /// <param name="uri">The Uri of the service being called.</param>
+        /// <param name="value">The object to serialize as the request body.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <exception cref="ResponseException"></exception>
+        public Task<RestHttpResponseMessage<TResult?>> Patch<TRequest, TResult>(string uri,
+            TRequest value,
+            CancellationToken cancellationToken = default) =>
+            MakeRequestWithBody<TRequest, TResult?>("PATCH", uri, value, cancellationToken);
+
+        /// <summary>
+        /// Execute an HTTP POST request with a body of type <typeparamref name = "TRequest" /> 
+        /// and return the result deserialized to type <typeparamref name = "TResult" />.
+        /// </summary>
+        /// <typeparam name="TRequest">The Request body type.</typeparam>
+        /// <typeparam name="TResult">The Result type.</typeparam>
+        /// <param name="uri">The Uri of the service being called.</param>
+        /// <param name="value">The object to serialize as the request body.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <exception cref="ResponseException"></exception>
+        public Task<RestHttpResponseMessage<TResult?>> Post<TRequest, TResult>(string uri,
+            TRequest value,
+            CancellationToken cancellationToken = default) =>
+            MakeRequestWithBody<TRequest, TResult?>("POST", uri, value, cancellationToken);
+
+        /// <summary>
+        /// Execute an HTTP POST request with a body of type <typeparamref name = "TRequest" />, do not return the result.
+        /// </summary>
+        /// <typeparam name="TRequest">The Request body type.</typeparam>
+        /// <param name="uri">The Uri of the service being called.</param>
+        /// <param name="value">The object to serialize as the request body.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <exception cref="ResponseException"></exception>
+        public Task Post<TRequest>(string uri, TRequest value, CancellationToken cancellationToken = default) =>
+            MakeRequestWithBody("POST", uri, value, cancellationToken);
+
+        /// <summary>
+        /// Execute an HTTP PUT request with a body of type <typeparamref name = "TRequest" /> 
+        /// and return the result deserialized to type <typeparamref name = "TResult" />.
+        /// </summary>
+        /// <typeparam name="TRequest">The Request body type.</typeparam>
+        /// <typeparam name="TResult">The Result type.</typeparam>
+        /// <param name="uri">The Uri of the service being called.</param>
+        /// <param name="value">The object to serialize as the request body.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <exception cref="ResponseException"></exception>
+        public Task<RestHttpResponseMessage<TResult?>> Put<TRequest, TResult>(string uri,
+            TRequest value,
+            CancellationToken cancellationToken = default) =>
+            MakeRequestWithBody<TRequest, TResult?>("PUT", uri, value, cancellationToken);
+
+        /// <summary>
+        /// Execute an HTTP PUT request with a body of type <typeparamref name = "TRequest" />, do not return the result.
+        /// </summary>
+        /// <typeparam name="TRequest">The Request body type.</typeparam>
+        /// <param name="uri">The Uri of the service being called.</param>
+        /// <param name="value">The object to serialize as the request body.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <exception cref="ResponseException"></exception>
+        public Task Put<TRequest>(string uri, TRequest value, CancellationToken cancellationToken = default) =>
+            MakeRequestWithBody("PUT", uri, value, cancellationToken);
 
         /// <summary>
         /// Get AccessToken using <see cref="AuthorizationRequest"/> handler.
@@ -144,7 +253,8 @@ namespace Monq.Core.HttpClientExtensions
                 return AccessToken;
 
             // Obtain new token.
-            // Если одновременно несколько потоков попытаются вызвать метод получения Access токена, то доступ дадим только одному.
+            // If several threads try to call the method for obtaining the Access token at the same time,
+            // we will give access to only one.
             await SemaphoreSlim.WaitAsync();
             var sw = new Stopwatch();
             sw.Start();
@@ -154,7 +264,7 @@ namespace Monq.Core.HttpClientExtensions
                     return AccessToken;
 
                 _log.LogInformation("Requesting authentication token.");
-                var accessTokenResponse = await handler(this);
+                var accessTokenResponse = await handler(_httpClient);
                 sw.Stop();
                 _log.LogInformation("Authentication token request finished at {elapsedMilliseconds} ms.",
                     sw.ElapsedMilliseconds);
@@ -163,11 +273,11 @@ namespace Monq.Core.HttpClientExtensions
                     throw new SecurityTokenException("Could not retrieve token.");
                 }
 
-                //set Token to the new token and set the expiry time to the new expiry time
+                // Set Token to the new token and set the expiry time to the new expiry time.
                 AccessToken = accessTokenResponse;
                 ExpiryTime = DateTime.UtcNow.AddSeconds(AccessToken.ExpiresIn);
 
-                //return fresh token
+                // Return fresh token.
                 return AccessToken;
             }
             catch (Exception e)
@@ -184,75 +294,6 @@ namespace Monq.Core.HttpClientExtensions
         }
 
         /// <summary>
-        /// Выполнить HTTP PATCH запрос c телом типа <typeparamref name="TRequest"/>, результат не возвращать.
-        /// </summary>
-        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
-        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
-        /// <param name="timeout">Таймаут ожидания ответа.</param>
-        /// <exception cref="ResponseException"></exception>
-        public Task Patch<TRequest>(string uri, TRequest value, TimeSpan timeout = default) =>
-            MakeRequestWithBody("PATCH", uri, value, timeout);
-
-        /// <summary>
-        /// Выполнить HTTP PATCH запрос c телом типа <typeparamref name="TRequest"/> и вернуть результат десериализованный в тип <typeparamref name="TResult"/>.
-        /// </summary>
-        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
-        /// <typeparam name="TResult">Тип результата.</typeparam>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
-        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
-        /// <param name="timeout">Таймаут ожидания ответа.</param>
-        /// <exception cref="ResponseException"></exception>
-        public Task<RestHttpResponseMessage<TResult?>> Patch<TRequest, TResult>(string uri, TRequest value, TimeSpan timeout = default) =>
-            MakeRequestWithBody<TRequest, TResult?>("PATCH", uri, value, timeout);
-
-        /// <summary>
-        /// Выполнить HTTP POST запрос c телом типа <typeparamref name="TRequest"/> и вернуть результат десериализованный в тип <typeparamref name="TResult"/>.
-        /// </summary>
-        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
-        /// <typeparam name="TResult">Тип результата.</typeparam>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
-        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
-        /// <param name="timeout">Таймаут ожидания ответа.</param>
-        /// <exception cref="ResponseException"></exception>
-        public Task<RestHttpResponseMessage<TResult?>> Post<TRequest, TResult>(string uri, TRequest value, TimeSpan timeout = default) =>
-            MakeRequestWithBody<TRequest, TResult?>("POST", uri, value, timeout);
-
-        /// <summary>
-        /// Выполнить HTTP POST запрос c телом типа <typeparamref name="TRequest"/>, результат не возвращать.
-        /// </summary>
-        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
-        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
-        /// <param name="timeout">Таймаут ожидания ответа.</param>
-        /// <exception cref="ResponseException"></exception>
-        public Task Post<TRequest>(string uri, TRequest value, TimeSpan timeout = default) =>
-            MakeRequestWithBody("POST", uri, value, timeout);
-
-        /// <summary>
-        /// Выполнить HTTP PUT запрос c телом типа <typeparamref name="TRequest"/> и вернуть результат десериализованный в тип <typeparamref name="TResult"/>.
-        /// </summary>
-        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
-        /// <typeparam name="TResult">Тип результата.</typeparam>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
-        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
-        /// <param name="timeout">Таймаут ожидания ответа.</param>
-        /// <exception cref="ResponseException"></exception>
-        public Task<RestHttpResponseMessage<TResult?>> Put<TRequest, TResult>(string uri, TRequest value, TimeSpan timeout = default) =>
-            MakeRequestWithBody<TRequest, TResult?>("PUT", uri, value, timeout);
-
-        /// <summary>
-        /// Выполнить HTTP PUT запрос c телом типа <typeparamref name="TRequest"/>, результат не возвращать.
-        /// </summary>
-        /// <typeparam name="TRequest">Тип тела запроса.</typeparam>
-        /// <param name="uri">Абсолютный Uri вызываемого сервиса.</param>
-        /// <param name="value">Объект, который требуется сериализовать как тело запроса.</param>
-        /// <param name="timeout">Таймаут ожидания ответа.</param>
-        /// <exception cref="ResponseException"></exception>
-        public Task Put<TRequest>(string uri, TRequest value, TimeSpan timeout = default) =>
-            MakeRequestWithBody("PUT", uri, value, timeout);
-
-        /// <summary>
         /// Resets the access token.
         /// </summary>
         public static void ResetAccessToken()
@@ -264,21 +305,30 @@ namespace Monq.Core.HttpClientExtensions
         }
 
         /// <summary>
-        /// Удалить всех подписчиков события AuthorizationRequest.
+        /// Remove all subscribers to the AuthorizationRequest event.
         /// </summary>
         public static void ResetAuthorizationRequestHandler()
         {
             AuthorizationRequest = null;
         }
 
+        /// <summary>
+        /// Set the bearer token authentication token.
+        /// </summary>
+        /// <param name="token">OAuth 2 token.</param>
+        public void SetBearerToken(string token)
+        {
+            _httpClient.SetBearerToken(token);
+        }
+
         Dictionary<string, string> GetForwardedHeaders()
         {
             var headers = new Dictionary<string, string>();
-            if (BasicHttpService.HttpContextAccessor is not null && BasicHttpService.Configuration.RestHttpClientHeaderOptions.LogForwardedHeaders)
+            if (HttpContextAccessor is not null && Configuration.RestHttpClientHeaderOptions.LogForwardedHeaders)
             {
-                foreach (var header in BasicHttpService.Configuration.RestHttpClientHeaderOptions.ForwardedHeaders)
+                foreach (var header in Configuration.RestHttpClientHeaderOptions.ForwardedHeaders)
                 {
-                    var requestHeaderValue = (string?)BasicHttpService.HttpContextAccessor?.HttpContext?.Request?.Headers[header];
+                    var requestHeaderValue = (string?)HttpContextAccessor?.HttpContext?.Request?.Headers[header];
                     if (!string.IsNullOrEmpty(requestHeaderValue))
                         headers.Add(header, requestHeaderValue);
                 }
@@ -290,11 +340,16 @@ namespace Monq.Core.HttpClientExtensions
         Uri GetAbsoluteUri(string uri)
         {
             if (!Uri.IsWellFormedUriString(uri, UriKind.Absolute))
-                return new Uri(BaseAddress, uri);
+                return new Uri(_httpClient.BaseAddress, uri);
             return new Uri(uri);
         }
 
-        void CheckStatusCode(string method, Uri uri, HttpResponseMessage response, string? requestData, string? responseData, Stopwatch sw)
+        void CheckStatusCode(string method,
+            Uri uri,
+            HttpResponseMessage response,
+            string? requestData,
+            string? responseData,
+            Stopwatch sw)
         {
             if (response.IsSuccessStatusCode)
                 return;
@@ -362,15 +417,40 @@ namespace Monq.Core.HttpClientExtensions
                      headers);
         }
 
-        [return: NotNull]
-        async Task<RestHttpResponseMessage<TResult?>> MakeRequestWithBody<TRequest, TResult>(string requestType,
+        void PassThroughForwardedHeaders()
+        {
+            if (HttpContextAccessor is null)
+                return;
+
+            foreach (var header in Configuration.RestHttpClientHeaderOptions.ForwardedHeaders)
+            {
+                var requestHeaderValue = (string?)HttpContextAccessor.HttpContext?.Request.Headers[header];
+                if (string.IsNullOrEmpty(requestHeaderValue)
+                    || _httpClient.DefaultRequestHeaders.Contains(header))
+                    continue;
+
+                _httpClient.DefaultRequestHeaders.Add(header, requestHeaderValue);
+            }
+        }
+
+        Task MakeRequestWithBody<TRequest>(string requestType,
             string uri,
             TRequest value,
-            TimeSpan timeout)
+            CancellationToken? cancellationToken = default) =>
+            MakeRequestWithBody<TRequest, object>(requestType, uri, value, cancellationToken);
+
+        [return: NotNull]
+        protected virtual async Task<RestHttpResponseMessage<TResult?>> MakeRequestWithBody<TRequest, TResult>(
+            string requestType,
+            string uri,
+            TRequest value,
+            CancellationToken? cancellationToken = default)
         {
+            var cts = cancellationToken ?? new CancellationTokenSource(DefaultTimeout).Token;
+
             var sw = new Stopwatch();
             sw.Start();
-            // Выполняем проброс указанных заголовков в опциях в нижестоящие сервисы.
+            // Forward the specified headers in the options to the downstream services.
             PassThroughForwardedHeaders();
 
             var fullUri = GetAbsoluteUri(uri);
@@ -378,7 +458,6 @@ namespace Monq.Core.HttpClientExtensions
 
             var result = string.Empty;
             HttpResponseMessage response;
-            using var cts = CreateTimeoutCancelToken(timeout);
             var serializedRequestValue = RestHttpClientSerializer.Serialize(value);
             try
             {
@@ -390,17 +469,17 @@ namespace Monq.Core.HttpClientExtensions
                     Content = new StringContent(serializedRequestValue, Encoding.UTF8, "application/json")
                 };
 
-                response = await SendAsync(request, cts.Token);
+                response = await _httpClient.SendAsync(request, cts);
                 response.RequestMessage = request;
 
-                // Перезапросить токен при ответе 401
+                // Refresh token on 401 response.
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     await SetToken(true);
-                    // Нельзя послать 2 раза одинаковый запрос.
-                    request = new HttpRequestMessage(method, uri);
-                    response = await SendAsync(request, cts.Token);
-                    response.RequestMessage = request;
+                    // You cannot send the same request 2 times.
+                    var request2 = new HttpRequestMessage(method, uri);
+                    response = await _httpClient.SendAsync(request2, cts);
+                    response.RequestMessage = request2;
                 }
 
                 var content = response.Content;
@@ -423,40 +502,25 @@ namespace Monq.Core.HttpClientExtensions
             return new RestHttpResponseMessage<TResult?>(response) { ResultObject = result.JsonToObject<TResult>() };
         }
 
-        void PassThroughForwardedHeaders()
-        {
-            if (BasicHttpService.HttpContextAccessor is null)
-                return;
-
-            foreach (var header in BasicHttpService.Configuration.RestHttpClientHeaderOptions.ForwardedHeaders)
-            {
-                var requestHeaderValue = (string?)BasicHttpService.HttpContextAccessor.HttpContext?.Request.Headers[header];
-                if (string.IsNullOrEmpty(requestHeaderValue)
-                    || DefaultRequestHeaders.Contains(header))
-                    continue;
-
-                DefaultRequestHeaders.Add(header, requestHeaderValue);
-            }
-        }
-
-        async Task MakeRequestWithBody<TRequest>(string requestType, string uri, TRequest value, TimeSpan timeout)
-        {
-            await MakeRequestWithBody<TRequest, object>(requestType, uri, value, timeout);
-        }
+        async Task MakeRequestWithoutBody(string requestType, string uri, CancellationToken? cancellationToken = default) =>
+            await MakeRequestWithoutBody<object>(requestType, uri, cancellationToken);
 
         [return: NotNull]
-        async Task<RestHttpResponseMessage<TResult?>> MakeRequestWithoutBody<TResult>(string requestType, string uri, TimeSpan timeout)
+        protected virtual async Task<RestHttpResponseMessage<TResult?>> MakeRequestWithoutBody<TResult>(
+            string requestType, string uri, CancellationToken? cancellationToken = default)
         {
+            var cts = cancellationToken ?? new CancellationTokenSource(DefaultTimeout).Token;
+
             var sw = new Stopwatch();
             sw.Start();
-            // Выполняем проброс указанных заголовков в опциях в нижестоящие сервисы.
+            // Forward the specified headers in the options to the downstream services.
             PassThroughForwardedHeaders();
 
             var fullUri = GetAbsoluteUri(uri);
             LogStartEvent(requestType, fullUri);
             HttpResponseMessage response;
-            using var cts = CreateTimeoutCancelToken(timeout);
-            var result = string.Empty;
+
+            string result = string.Empty;
             try
             {
                 await SetToken();
@@ -464,17 +528,17 @@ namespace Monq.Core.HttpClientExtensions
                 var method = new HttpMethod(requestType);
 
                 var request = new HttpRequestMessage(method, uri);
-                response = await SendAsync(request, cts.Token);
+                response = await _httpClient.SendAsync(request, cts);
                 response.RequestMessage = request;
 
-                // Перезапросить токен при ответе 401
+                // Refresh token on 401 response.
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     await SetToken(true);
-                    // Нельзя послать 2 раза одинаковый запрос.
-                    request = new HttpRequestMessage(method, uri);
-                    response = await SendAsync(request, cts.Token);
-                    response.RequestMessage = request;
+                    // You cannot send the same request 2 times.
+                    var request2 = new HttpRequestMessage(method, uri);
+                    response = await _httpClient.SendAsync(request2, cts);
+                    response.RequestMessage = request2;
                 }
 
                 var content = response.Content;
@@ -497,25 +561,15 @@ namespace Monq.Core.HttpClientExtensions
             return new RestHttpResponseMessage<TResult?>(response) { ResultObject = result.JsonToObject<TResult>() };
         }
 
-        CancellationTokenSource CreateTimeoutCancelToken(TimeSpan timeout)
-        {
-            var cts = new CancellationTokenSource();
-            cts.CancelAfter(timeout == default ? _defaultTimeout : timeout);
-            return cts;
-        }
-
-        async Task MakeRequestWithoutBody(string requestType, string uri, TimeSpan timeout) =>
-            await MakeRequestWithoutBody<object>(requestType, uri, timeout);
-
         async Task SetToken(bool invokeHandler = false)
         {
             // If token was set by HttpAccessHandler use it.
-            if (DefaultRequestHeaders?.Authorization?.Parameter is not null && !invokeHandler)
+            if (_httpClient.DefaultRequestHeaders?.Authorization?.Parameter is not null && !invokeHandler)
                 return;
 
             var token = await GetAccessToken(invokeHandler);
             if (token != null)
-                this.SetBearerToken(token.AccessToken);
+                SetBearerToken(token.AccessToken);
         }
     }
 }

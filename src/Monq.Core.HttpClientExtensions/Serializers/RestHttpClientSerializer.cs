@@ -28,11 +28,19 @@ namespace Monq.Core.HttpClientExtensions
             return _currentSerializer.Deserialize<TResult>(value);
         }
 
+        /// <summary>
+        /// Use System.Text.Json serializer as default serializer for the HttpClient requests and responses.
+        /// </summary>
+        /// <param name="setupAction"></param>
         public static void UseSystemTextJson(Action<System.Text.Json.JsonSerializerOptions>? setupAction = null)
         {
             _currentSerializer = new RestHttpClientSystemTextJsonSerializer(setupAction);
         }
 
+        /// <summary>
+        /// Use NewtonsoftJson serializer as default serializer for the HttpClient requests and responses.
+        /// </summary>
+        /// <param name="setupAction"></param>
         public static void UseNewtonsoftJson(Action<Newtonsoft.Json.JsonSerializerSettings>? setupAction = null)
         {
             _currentSerializer = new RestHttpClientNewtonsoftJsonSerializer(setupAction);

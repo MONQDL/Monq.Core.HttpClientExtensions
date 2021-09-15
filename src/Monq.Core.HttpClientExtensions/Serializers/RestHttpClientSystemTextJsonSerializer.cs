@@ -22,11 +22,13 @@ namespace Monq.Core.HttpClientExtensions
             }
         }
 
+        /// <inheritdoc />
         public string Serialize<TValue>(TValue value)
         {
             return System.Text.Json.JsonSerializer.Serialize(value, Options);
         }
 
+        /// <inheritdoc />
         public TResult? Deserialize<TResult>(string value)
         {
             return System.Text.Json.JsonSerializer.Deserialize<TResult>(value, Options);

@@ -28,11 +28,13 @@ namespace Monq.Core.HttpClientExtensions
             }
         }
 
+        /// <inheritdoc />
         public string Serialize<TValue>(TValue value)
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(value, Options);
         }
 
+        /// <inheritdoc />
         public TResult? Deserialize<TResult>(string value)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<TResult>(value, Options);

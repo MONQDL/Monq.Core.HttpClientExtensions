@@ -3,6 +3,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Polly;
+using Polly.Extensions.Http;
+using System;
+using System.Net.Http;
 
 namespace Monq.Core.HttpClientExtensions.TestApp
 {
@@ -20,8 +24,11 @@ namespace Monq.Core.HttpClientExtensions.TestApp
         {
             services.AddOptions();
             services.AddHttpContextAccessor();
+            services.AddLogging();
             services.Configure<ServiceUriOptions>(x => x.TestServiceUri = "https://jsonplaceholder.typicode.com");
-            services.AddTransient<ITestService, TestService>();
+
+            services.AddHttpClient<ITestService, TestService>()
+                .AddPolicyHandler(GetCircuitBreakerPolicy());
 
             services.AddControllers()
                 .AddJsonOptions(options =>
@@ -38,6 +45,13 @@ namespace Monq.Core.HttpClientExtensions.TestApp
 
             app.UseRouting();
             app.UseEndpoints(e => e.MapControllers());
+        }
+
+        static IAsyncPolicy<HttpResponseMessage> GetCircuitBreakerPolicy()
+        {
+            return HttpPolicyExtensions
+                .HandleTransientHttpError()
+                .CircuitBreakerAsync(2, TimeSpan.FromSeconds(30));
         }
     }
 }

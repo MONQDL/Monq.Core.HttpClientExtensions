@@ -5,14 +5,14 @@ using System.Net.Http;
 namespace Monq.Core.HttpClientExtensions.Extensions
 {
     /// <summary>
-    /// Хелпер для создания оберток над объектами в виде http-ответа.
+    /// Helper for creating wrappers over objects in the form of an http response.
     /// </summary>
     public static class RestHttpResponseMessageWrapper
     {
         /// <summary>
-        /// Вернуть пустой экземпляр <typeparamref name="TResult"/>, который обернут в http-ответ с кодом 200.
+        /// Return an empty instance of <typeparamref name = "TResult" />, which is wrapped in an http response with code 200.
         /// </summary>
-        /// <typeparam name="TResult">Тип объекта, пустой экземпляр которого будет создан.</typeparam>
+        /// <typeparam name="TResult">The type of object to be instantiated empty.</typeparam>
         public static RestHttpResponseMessage<TResult> Empty<TResult>()
         {
             var message = new HttpResponseMessage(System.Net.HttpStatusCode.OK);
@@ -28,7 +28,7 @@ namespace Monq.Core.HttpClientExtensions.Extensions
                 var constructedListType = listType.MakeGenericType(genericTypeArguments);
 
                 var instance = Activator.CreateInstance(constructedListType);
-                resultMessage.ResultObject = (TResult)instance;
+                resultMessage.ResultObject = (TResult)instance!;
             }
             else
                 resultMessage.ResultObject = default;

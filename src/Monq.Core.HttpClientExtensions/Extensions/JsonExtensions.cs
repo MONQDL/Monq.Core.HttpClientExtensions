@@ -1,18 +1,21 @@
-﻿using System.Text.Json;
-
-namespace Monq.Core.HttpClientExtensions.Extensions
+﻿namespace Monq.Core.HttpClientExtensions.Extensions
 {
     /// <summary>
-    /// Класс предоставляет набор методов-оберток над сериализатором Newtonsoft.Json.
+    /// The class provides a set of wrapper methods over the <see cref="RestHttpClientSerializer"/>.
     /// </summary>
     static class JsonExtensions
     {
         /// <summary>
-        /// Метод выполняет десериализацию строки JSON в объект типа <typeparamref name="T"/>.
+        /// Deserialize the JSON string into an object of type <typeparamref name = "T" />.
         /// </summary>
-        /// <typeparam name="T">Тип объекта, в который требуется провести десериализацию.</typeparam>
-        /// <param name="value">Строка с данными, которые требуется десериализовать.</param>
-        public static T? JsonToObject<T>(this string value) =>
-            RestHttpClientSerializer.Deserialize<T>(value);
+        /// <typeparam name="T">The type of object to deserialize to.</typeparam>
+        /// <param name="value">A string with the data to be deserialized. 
+        /// If string is empty, than default(T) will be returned.</param>
+        public static T? JsonToObject<T>(this string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return default(T);
+            return RestHttpClientSerializer.Deserialize<T>(value);
+        }
     }
 }

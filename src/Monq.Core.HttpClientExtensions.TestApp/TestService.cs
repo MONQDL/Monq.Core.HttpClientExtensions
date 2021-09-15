@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Monq.Core.HttpClientExtensions.Services;
+using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -12,7 +12,7 @@ namespace Monq.Core.HttpClientExtensions.TestApp
         Task<TestModel> TestApi();
     }
 
-    public class TestService : BasicSingleHttpService<ServiceUriOptions>, ITestService
+    public class TestService : RestHttpClientFromOptions<ServiceUriOptions>, ITestService
     {
         /// <summary>
         /// Инициализирует новый экземпляр класса <see cref="TestService" />.
@@ -25,25 +25,24 @@ namespace Monq.Core.HttpClientExtensions.TestApp
         /// <exception cref="System.ArgumentNullException">baseUri - Не указан базовый Uri сервиса.</exception>
         public TestService(
             IOptions<ServiceUriOptions> optionsAccessor,
+            HttpClient httpClient,
             ILoggerFactory loggerFactory,
-            BasicHttpServiceOptions configuration,
-            IHttpContextAccessor httpContextAccessor,
-            HttpMessageHandler? httpMessageInvoker = null) : 
-            base(optionsAccessor, 
-                loggerFactory, 
-                configuration, 
-                httpContextAccessor, 
-                optionsAccessor.Value.TestServiceUri, 
-                httpMessageInvoker)
+            RestHttpClientOptions configuration,
+            IHttpContextAccessor httpContextAccessor) :
+            base(optionsAccessor,
+                httpClient,
+                loggerFactory,
+                configuration,
+                httpContextAccessor,
+                optionsAccessor.Value.TestServiceUri)
         {
         }
 
         public async Task<TestModel> TestApi()
         {
-            using var client = CreateRestHttpClient();
-            var result = await client.Get<TestModel>("posts/1");
+            var result = await Get<TestModel>("posts/1", TimeSpan.FromSeconds(10));
 
-            return result.ResultObject;
+            return result.ResultObject!;
         }
     }
 }

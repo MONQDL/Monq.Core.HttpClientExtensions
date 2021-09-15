@@ -1,7 +1,5 @@
 # HttpClientExtensions library for easy communication between dotnet microservices
 
-*English*
-
 The library provides a set of extensions to the HttpClient class to support .net core microservices.
 
 ### Installation
@@ -28,7 +26,7 @@ If you want to forward headers from upstream requests (`HttpContext.Request`) to
 ```csharp
 hostBuilder.ConfigBasicHttpService(opts =>
 {
-    var headerOptions = new BasicHttpServiceHeaderOptions();
+    var headerOptions = new RestHttpClientHeaderOptions();
     headerOptions.AddForwardedHeader(MicroserviceConstants.EventIdHeader);
     headerOptions.AddForwardedHeader(MicroserviceConstants.UserspaceIdHeader);
 
@@ -174,38 +172,42 @@ public interface IRemoteServiceApiHttpService
 }
 ```
 
-The interface implementation must inherit from the class `BasicHttpService<TOptions>` or from `BasicSingleHttpService<TOptions>`.
+The interface implementation must inherit from the class `RestHttpClient` or from `RestHttpClientFromOptions<TOptions>`.
 
-`BasicSingleHttpService<TOptions>` is a base class that provides an out-of-the-box `BaseUri` injection mechanism for `HttpClient`.
+`RestHttpClientFromOptions<TOptions>` is a base class that provides an out-of-the-box `BaseUri` injection mechanism for `HttpClient`.
 
 `TOptions` is a class that is used to read settings from `asppsettings.json` for base addresses of services and is injected into `ServiceCollection` as `IOptions<TOptions>`
 
 Class implementation:
 
 ```csharp
-public class DefaultRemoteServiceApiHttpService : BasicSingleHttpService<ServiceUriOptions>, IRemoteServiceApiHttpService
+public class DefaultRemoteServiceApiHttpService : RestHttpClientFromOptions<ServiceUriOptions>, IRemoteServiceApiHttpService
 {
-    public DefaultRemoteServiceApiHttpService(IOptions<ServiceUriOptions> optionsAccessor, 
-    ILogger<DefaultRemoteServiceApiHttpService> log,
-    IHttpContextAccessor? httpContextAccessor,
-    HttpMessageHandler? httpMessageInvoker = null)
-        : base(optionsAccessor, log, httpContextAccessor, optionsAccessor.Value.ServiceUri, httpMessageInvoker)
+    public DefaultRemoteServiceApiHttpService(IOptions<ServiceUriOptions> optionsAccessor,
+            HttpClient httpClient,
+            ILoggerFactory loggerFactory,
+            RestHttpClientOptions configuration,
+            IHttpContextAccessor httpContextAccessor)
+        : base(optionsAccessor,
+                httpClient,
+                loggerFactory,
+                configuration,
+                httpContextAccessor,
+                optionsAccessor.Value.ServiceUri)
     {
     }
 
     public async Task<IList<RemoteServiceModel>> GetAllInstances()
     {
-        using var client = CreateRestHttpClient();
-        
         var uri = "api/instances";
-        var result = await client.Get<IList<RemoteServiceModel>>(uri, TimeSpan.FromSeconds(10));
+        var result = await Get<IList<RemoteServiceModel>>(uri, TimeSpan.FromSeconds(10));
 
         return result.ResultObject;
     }
 }
 ```
 
-Moreover, such services are implemented via DI as `scoped` services, since the service can be reused in a single ASP.NET scope. But you can easily add it as `transient`.
+Moreover, such services are implemented via DI as HttpClient services and they must be added to DI over `AddHttpClient<>()` method.
 
 ```csharp
 public class Startup
@@ -216,7 +218,7 @@ public class Startup
 		services.AddOptions();
         services.Configure<ServiceUriOptions>(Configuration.GetSection("Services"));
 
-		services.AddScoped<IRemoteServiceApiHttpService, DefaultRemoteServiceApiHttpService>();
+		services.AddHttpClient<IRemoteServiceApiHttpService, DefaultRemoteServiceApiHttpService>();
 	}
 }
 ```
@@ -224,16 +226,22 @@ public class Startup
 If you need to get access to other instances from the `ServiceCollection` collection inside the http service, then classic dependency injection is implemented.
 
 ```csharp
-public class CachedRemoteServiceApiHttpService : BasicSingleHttpService<ServiceUriOptions>, IRemoteServiceApiHttpService
+public class CachedRemoteServiceApiHttpService : RestHttpClientFromOptions<ServiceUriOptions>, IRemoteServiceApiHttpService
 {
     readonly IMemoryCache _memoryCache;
 
-    public CachedRemoteServiceApiHttpService(IOptions<ServiceUriOptions> optionsAccessor, 
-        ILogger<CachedRemoteServiceApiHttpService> log, 
-        IHttpContextAccessor? httpContextAccessor, 
-        IMemoryCache memoryCache, 
-        HttpMessageHandler? httpMessageInvoker = null)
-        : base(optionsAccessor, log, httpContextAccessor, optionsAccessor.Value.ServiceUri, httpMessageInvoker)
+    public CachedRemoteServiceApiHttpService(IOptions<ServiceUriOptions> optionsAccessor,
+            HttpClient httpClient,
+            ILoggerFactory loggerFactory,
+            RestHttpClientOptions configuration,
+            IHttpContextAccessor httpContextAccessor 
+            IMemoryCache memoryCache)
+        : base(optionsAccessor,
+                httpClient,
+                loggerFactory,
+                configuration,
+                httpContextAccessor,
+                optionsAccessor.Value.ServiceUri)
     {
         _memoryCache = memoryCache;
     }
@@ -253,10 +261,8 @@ ILogger<DefaultRemoteServiceApiHttpService> log
 ```csharp
 public async Task<RestHttpResponseMessage<IList<RemoteServiceModel>> GetAllInstances()
 {
-    using var client = CreateRestHttpClient();
-    
     var uri = "api/instances";
-    var result = await client.Get<IList<RemoteServiceModel>>(uri, TimeSpan.FromSeconds(10));
+    var result = await Get<IList<RemoteServiceModel>>(uri, TimeSpan.FromSeconds(10));
 
     return result;
 }
@@ -270,12 +276,36 @@ public async Task<RestHttpResponseMessage<IList<RemoteServiceModel>> FilterInsta
     if (filter is null || filter.Prop is null)
         return RestHttpResponseMessageWrapper.Empty<IEnumerable<ConnectorMinimalViewModel>>(); // using the response wrapper.
 
-    using var client = CreateRestHttpClient();
-    
     var uri = "api/instances";
-    var result = await client.Get<IList<RemoteServiceModel>>(uri, TimeSpan.FromSeconds(10));
+    var result = await Get<IList<RemoteServiceModel>>(uri, TimeSpan.FromSeconds(10));
 
     return result;
+}
+```
+
+### Using Polly
+
+As the v5 library now uses the HttpClientFactory, you can easily use `Microsoft.Extensions.Http.Polly` library. Just add it to the project via the Nuget and choose needed policies.
+
+```csharp
+using Polly;
+using Polly.Extensions.Http;
+
+public class Startup
+{
+	public void ConfigureServices(IServiceCollection services)
+    {
+		....
+		services.AddHttpClient<IRemoteServiceApiHttpService, DefaultRemoteServiceApiHttpService>()
+            .AddPolicyHandler(GetCircuitBreakerPolicy());
+	}
+
+    static IAsyncPolicy<HttpResponseMessage> GetCircuitBreakerPolicy()
+    {
+        return HttpPolicyExtensions
+            .HandleTransientHttpError()
+            .CircuitBreakerAsync(2, TimeSpan.FromSeconds(30));
+    }
 }
 ```
 
@@ -283,37 +313,6 @@ public async Task<RestHttpResponseMessage<IList<RemoteServiceModel>> FilterInsta
 
 Http services inherited from this class are easy to test.
 
-Add a stub class to the test project
-```csharp
-public class FakeResponseHandler : HttpMessageHandler
-{
-    readonly Dictionary<Tuple<Uri, HttpMethod>, HttpResponseMessage> _fakeResponses = new Dictionary<Tuple<Uri, HttpMethod>, HttpResponseMessage>();
-
-    public FakeResponseHandler()
-    {   }
-
-    public void AddFakeResponse(HttpMethod httpMethod, Uri uri, HttpResponseMessage responseMessage, string content)
-    {
-        responseMessage.Content = new StringContent(content);
-        _fakeResponses.Add(new Tuple<Uri, HttpMethod>(uri, httpMethod), responseMessage);
-    }
-
-    protected async override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-    {
-        var key = new Tuple<Uri, HttpMethod>(request.RequestUri, request.Method);
-        if (_fakeResponses.ContainsKey(key))
-        {
-            return await Task.FromResult(_fakeResponses[key]);
-        }
-        else
-        {
-            return await Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound) { RequestMessage = request });
-        }
-
-    }
-}
-```
-
 ```csharp
 public class DefaultRemoteServiceApiHttpServiceTests
 {
@@ -337,368 +336,19 @@ public class DefaultRemoteServiceApiHttpServiceTests
 		var model = new RemoteServiceModel() { UserId = 1532 };
 		var modelJson = JsonConvert.SerializeObject(new List<RemoteServiceModel>() { model });
 
-		var fakeResponseHandler = new FakeResponseHandler();
-		fakeResponseHandler.AddFakeResponse(HttpMethod.Get, new Uri("https://jsonplaceholder.typicode.com/api/instances"),
-			new HttpResponseMessage(HttpStatusCode.OK), modelJson);
-
-		var apiService = CreateApiService(fakeResponseHandler);
-
-		var instances = await apiService.GetAllInstances();
-
-        Assert.Equal(1, instances.Count())
-        var firstInstance = instances.First();
-		Assert.Equal(model.UserId, firstInstance.UserId);
-	}
-
-	DefaultRemoteServiceApiHttpService CreateApiService(FakeResponseHandler fakeResponseHandle)
-	{
-		var service = new DefaultRemoteServiceApiHttpService(_serviceUriOptionsMock.Object, _logger, null, fakeResponseHandle);
-		return service;
-	}
-}
-```
-
----
-
-*Русский*
-
-Библиотека содержит набор расширений, который применяется в проектах AspNet Core, основанных на микросервисоной архитектуре.
-
-### Установка
-
-```powershell
-Install-Package Monq.Core.HttpClientExtensions
-```
-
-### Подключение
-
-Библиотека может работать без явного подключения, но для некоторых параметров можно использовать конфигурацию DI. 
-Например, если требуется пробрасывать заголовки из вышестоящих запросов (`HttpContext.Request`) в нижестоящие запросы, можно использовать конструкцию.
-
-*Program.cs*
-
-```csharp
-hostBuilder.ConfigBasicHttpService(opts =>
-{
-    var headerOptions = new BasicHttpServiceHeaderOptions();
-    headerOptions.AddForwardedHeader(MicroserviceConstants.EventIdHeader);
-    headerOptions.AddForwardedHeader(MicroserviceConstants.UserspaceIdHeader);
-
-    opts.ConfigHeaders(headerOptions);
-});
-
-```
-
-В режиме по умолчанию библиотека использует сериализатор `Newtonsoft.Json`, но есть возможность переключиться на `System.Text.Json`. Пример:
-
-*Startup.cs*
-```csharp
-{
-	public void ConfigureServices(IServiceCollection services)
-    {
-		....
-		RestHttpClientSerializer.UseSystemTextJson(options => options.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase); // Use System.Text.Json with options.
-        RestHttpClientSerializer.UseNewtonsoftJson(); // Use NewtonsoftJson. Default.
-	}
-}
-```
-
-Опции сериализаторов, использующиеся по умолчанию:
-
-*Newtonsoft.Json*
-```csharp
-new Newtonsoft.Json.JsonSerializerSettings() { ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver
-{
-    NamingStrategy = new Newtonsoft.Json.Serialization.CamelCaseNamingStrategy
-    {
-        ProcessDictionaryKeys = true
-    }
-}};
-```
-
-*System.Text.Json*
-```csharp
-new System.Text.Json.JsonSerializerOptions
-{
-    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-    DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-    PropertyNameCaseInsensitive = true
-};
-```
-
-В обычном режиме библиотека нацелена на автоматический проброс `Bearer token` из контекста `IHttpContextAccessor`. Но в некоторых случаях, например, в консольных программах, программе самой требуется получить `Bearer token` для выполнения запросов. В таком случае требуется установить свой собственный обработчик получения токенов. Библиотека содержит реализацию по умолчанию для получения токенов из `Identity Provider`, которую можно подключить, установив ссылку на делегат своего обработчика.
-
-```csharp
-hostBuilder.ConfigureStaticAuthentication();
-```
-При этом требуется в Configuration наличие конфигурации вида:
-
-*appsettings.json*
-```json
-{
-  "Authentication": {
-    "AuthenticationEndpoint": "https://smon.monq.ru",
-    "Client": {
-        "Login": "idp-client",
-        "Password": "idp-client-secret"
-    },
-    "RequireHttpsMetadata": false
-  }
-}
-```
-
-Пример самостоятельной реализации метода аутентификации в idp используя `IdentityModel.Client`.
-
-*Program.cs*
-```csharp
-{
-	public void ConfigureServices(IServiceCollection services)
-    {
-		....
-		services.AddOptions();
-        services.Configure<ServiceUriOptions>(Configuration.GetSection("Services"));
-
-		services.AddScoped<IRemoteServiceApiHttpService, DefaultRemoteServiceApiHttpService>();
-	}
-}
-...
-
-RestHttpClient.AuthorizationRequest += RestHttpClientAuthorizationRequest;
-
-static async Task<TokenResponse> RestHttpClientAuthorizationRequest(HttpClient client)
-{
-    var authEndpoint = "";
-    var requireHttps = true;
-    var clientId = "";
-    var clientSecret = "";
-    var scope = "scope1 scope2";
-
-    var discoveryDocumentRequest = new DiscoveryDocumentRequest
-    {
-        Address = authEndpoint,
-        Policy = new DiscoveryPolicy { RequireHttps = requireHttps }
-    };
-    var disco = await client.GetDiscoveryDocumentAsync(discoveryDocumentRequest);
-    if (disco.IsError) throw new DiscoveryEndpointException(disco.Error, disco.Exception);
-
-    var request = new ClientCredentialsTokenRequest
-    {
-        Address = disco.TokenEndpoint,
-        ClientId = clientId,
-        ClientSecret = clientSecret,
-        Scope = scope
-    };
-
-    var response = await client.RequestClientCredentialsTokenAsync(request);
-    return response;
-}
-```
-
-Делегат `RestHttpClient.AuthorizationRequest` потокобезопасный. Вызывается при первом вызове метода отправки http запроса. Блокировки проходят с помощью `SemaphoreSlim`. Минус такой схемы невозможность одновременной работы с несколькими ID провайдерами.
-
-
-### Примеры использования
-
-Задача: создать сервис для выполнения HTTP запросов по REST интерфейсу в формате JSON с поддержкой "проброса" авторизационного заголовка `Authentication: Bearer token`.
-
-Для решения данной задачи требуется создать интерфейс, реализовать этот интерфейс в классе и подключить интерфейс и реализацию в DI. 
-В данном случае, интерфейс позволяет легко организовать unit тестирование сервиса, который использует интерфейс.
-
-*ServiceUriOptions.cs*
-```csharp
-public class ServiceUriOptions
-{
-    public string ServiceUri { get; set; } = default!;
-}
-```
-
-*RemoteServiceModel.cs*
-```csharp
-public class RemoteServiceModel
-{
-    public int UserId { get; set; }
-    public int Id { get; set; }
-    public string Title { get; set; } = default!;
-    public string Body { get; set; } = default!;
-}
-```
-
-*IRemoteServiceApiHttpService.cs*
-```csharp
-public interface IRemoteServiceApiHttpService
-{
-    Task<IList<RemoteServiceModel>> GetAllInstances();
-}
-```
-
-Реализация интерфейса должна наследоваться от класса `BasicHttpService<TOptions>` или от `BasicSingleHttpService<TOptions>`.
-
-`BasicSingleHttpService<TOptions>` - это базовый класс, который предоставляет уже готовый механизм внедрения `BaseUri` для `HttpClient`.
-
-`TOptions` - это класс, который используется для чтения настроек из asppsettings.json базовых адресов сервисов и инжектирован в `ServiceCollection` как `IOptions<TOptions>`
-
-Реализация класса:
-
-```csharp
-public class DefaultRemoteServiceApiHttpService : BasicSingleHttpService<ServiceUriOptions>, IRemoteServiceApiHttpService
-{
-    public DefaultRemoteServiceApiHttpService(IOptions<ServiceUriOptions> optionsAccessor, 
-    ILogger<DefaultRemoteServiceApiHttpService> log,
-    IHttpContextAccessor? httpContextAccessor,
-    HttpMessageHandler? httpMessageInvoker = null)
-        : base(optionsAccessor, log, httpContextAccessor, optionsAccessor.Value.ServiceUri, httpMessageInvoker)
-    {
-    }
-
-    public async Task<IList<RemoteServiceModel>> GetAllInstances()
-    {
-        using var client = CreateRestHttpClient();
-        
-        var uri = "api/instances";
-        var result = await client.Get<IList<RemoteServiceModel>>(uri, TimeSpan.FromSeconds(10));
-
-        return result.ResultObject;
-    }
-}
-```
-
-При этом такие сервисы внедряются через DI как `scoped` сервисы, т.к. сервис может быть переиспользован в едином scope ASP.NET.
-
-```csharp
-public class Startup
-{
-	public void ConfigureServices(IServiceCollection services)
-    {
-		....
-		services.AddOptions();
-        services.Configure<ServiceUriOptions>(Configuration.GetSection("Services"));
-
-		services.AddScoped<IRemoteServiceApiHttpService, DefaultRemoteServiceApiHttpService>();
-	}
-}
-```
-
-Если требуется внутри http сервиса получить доступ к другим экземплярам из коллекции `ServiceCollection`, то реализуется классическое внедрение зависимостей.
-
-```csharp
-public class CachedRemoteServiceApiHttpService : BasicSingleHttpService<ServiceUriOptions>, IRemoteServiceApiHttpService
-{
-    readonly IMemoryCache _memoryCache;
-
-    public CachedRemoteServiceApiHttpService(IOptions<ServiceUriOptions> optionsAccessor, 
-        ILogger<CachedRemoteServiceApiHttpService> log, 
-        IHttpContextAccessor? httpContextAccessor, 
-        IMemoryCache memoryCache, 
-        HttpMessageHandler? httpMessageInvoker = null)
-        : base(optionsAccessor, log, httpContextAccessor, optionsAccessor.Value.ServiceUri, httpMessageInvoker)
-    {
-        _memoryCache = memoryCache;
-    }
-	..........
-}
-```
-
-### Особенности реализации
-
-- В конструкторе класса требуется указать тип самого класса, при объявлении `ILogger`.
-
-```csharp
-ILogger<DefaultRemoteServiceApiHttpService> log
-```
-
-- В некоторых ситуациях требуется отдавать полный ответ от микросервиса, включающий заголовки ответа. 
-```csharp
-public async Task<RestHttpResponseMessage<IList<RemoteServiceModel>> GetAllInstances()
-{
-    using var client = CreateRestHttpClient();
-    
-    var uri = "api/instances";
-    var result = await client.Get<IList<RemoteServiceModel>>(uri, TimeSpan.FromSeconds(10));
-
-    return result;
-}
-```
-- Если в методе, который должен возвращать `RestHttpResponseMessage<T>` требуется выполнить ранний выход еще до выполнения запроса, можно использовать обертку `RestHttpResponseMessageWrapper.Empty<>`, которая вернет тип `RestHttpResponseMessage<T>`. Пример:
-```csharp
-using Monq.Core.HttpClientExtensions.Extensions;
-
-public async Task<RestHttpResponseMessage<IList<RemoteServiceModel>> FilterInstances(RemoteServiceFilter filter)
-{
-    if (filter is null || filter.Prop is null)
-        return RestHttpResponseMessageWrapper.Empty<IEnumerable<ConnectorMinimalViewModel>>();
-
-    using var client = CreateRestHttpClient();
-    
-    var uri = "api/instances";
-    var result = await client.Get<IList<RemoteServiceModel>>(uri, TimeSpan.FromSeconds(10));
-
-    return result;
-}
-```
-
-### Особенности тестирования
-
-Http сервисы, наследуемые от данного класса легко тестируются.
-
-Добавляется класс-заглушка в тестовый проект
-```csharp
-public class FakeResponseHandler : HttpMessageHandler
-{
-    readonly Dictionary<Tuple<Uri, HttpMethod>, HttpResponseMessage> _fakeResponses = new Dictionary<Tuple<Uri, HttpMethod>, HttpResponseMessage>();
-
-    public FakeResponseHandler()
-    {   }
-
-    public void AddFakeResponse(HttpMethod httpMethod, Uri uri, HttpResponseMessage responseMessage, string content)
-    {
-        responseMessage.Content = new StringContent(content);
-        _fakeResponses.Add(new Tuple<Uri, HttpMethod>(uri, httpMethod), responseMessage);
-    }
-
-    protected async override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-    {
-        var key = new Tuple<Uri, HttpMethod>(request.RequestUri, request.Method);
-        if (_fakeResponses.ContainsKey(key))
-        {
-            return await Task.FromResult(_fakeResponses[key]);
-        }
-        else
-        {
-            return await Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound) { RequestMessage = request });
-        }
-
-    }
-}
-```
-
-```csharp
-public class DefaultRemoteServiceApiHttpServiceTests
-{
-	readonly ILogger<DefaultRemoteServiceApiHttpService> _logger;
-	readonly Mock<IOptions<ServiceUriOptions>> _serviceUriOptionsMock;
-
-	public DefaultRemoteServiceApiHttpServiceTests()
-    {
-        _logger = new StubLogger<DefaultRemoteServiceApiHttpService>();
-
-        _serviceUriOptionsMock = new Mock<IOptions<ServiceUriOptions>>();
-        _serviceUriOptionsMock.Setup(x => x.Value)
-            .Returns(new ServiceUriOptions() {
-                ServiceUri = "https://jsonplaceholder.typicode.com"
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+
+        mockHttpMessageHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(modelJson),
             });
-    }
 
-    [Fact]
-	public async Task ShouldProperlyGetAllInstances()
-	{
-		var model = new RemoteServiceModel() { UserId = 1532 };
-		var modelJson = JsonConvert.SerializeObject(new List<RemoteServiceModel>() { model });
+        var client = new HttpClient(mockHttpMessageHandler.Object);
 
-		var fakeResponseHandler = new FakeResponseHandler();
-		fakeResponseHandler.AddFakeResponse(HttpMethod.Get, new Uri("https://jsonplaceholder.typicode.com/api/instances"),
-			new HttpResponseMessage(HttpStatusCode.OK), modelJson);
-
-		var apiService = CreateApiService(fakeResponseHandler);
+		var apiService = CreateApiService(client);
 
 		var instances = await apiService.GetAllInstances();
 
@@ -707,10 +357,30 @@ public class DefaultRemoteServiceApiHttpServiceTests
 		Assert.Equal(model.UserId, firstInstance.UserId);
 	}
 
-	DefaultRemoteServiceApiHttpService CreateApiService(FakeResponseHandler fakeResponseHandle)
+	DefaultRemoteServiceApiHttpService CreateApiService(HttpClient httpClient, HttpContext? httpContext, IOptions<ServiceOptions> optionsAccessor)
 	{
-		var service = new DefaultRemoteServiceApiHttpService(_serviceUriOptionsMock.Object, _logger, null, fakeResponseHandle);
-		return service;
+		return new DefaultRemoteServiceApiHttpService(optionsAccessor ?? _optionsMoq.Object,
+                       httpClient,
+                       _loggerFactory,
+                       null,
+                       new HttpContextAccessorStub(httpContext ?? new DefaultHttpContext()),
+                       optionsAccessor.Value.ServiceUri);
 	}
 }
 ```
+
+### Migration Guide from v4 to v5
+
+In the v5 the library was changed a lot. So you must follow migration steps.
+
+1. Update the library itself in the csproj.
+2. Rename all classes `BasicHttpService` to `RestHttpClient`.
+3. Rename all classes `BasicSingleHttpService` to `RestHttpClientFromOptions`.
+4. Remove all namespace references `Monq.Core.HttpClientExtensions.Services`.
+5. Rename all classes `BasicHttpServiceOptions` to `RestHttpClientOptions`.
+6. Rename all classes `BasicHttpServiceHeaderOptions` to `RestHttpClientHeaderOptions`.
+6. Change all constructors for inherited classes from `RestHttpClient` and `RestHttpClientFromOptions` to its coresponding versions.
+7. In the class methods remove all strings `using var client = CreateRestHttpClient();` or `using (var client = CreateRestHttpClient()) { <content must stay> }`.
+8. In the class methods remove remove change all strings `client.Get()` or `client.Post()` and others to just `Get()` or `Post()`.
+8. In the Startup.cs change `services.AddTransient<IService, Service>()` to `servicese.AddHttpClient<IService, Service>()` for all http services inherited from the `RestHttpClient` and `RestHttpClientFromOptions`.
+9. Change all unit tests to the new version described in the [Testing features](#testing-features).
