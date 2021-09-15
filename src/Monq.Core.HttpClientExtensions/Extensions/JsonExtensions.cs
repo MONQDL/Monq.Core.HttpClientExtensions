@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-
-namespace Monq.Core.HttpClientExtensions.Extensions
+﻿namespace Monq.Core.HttpClientExtensions.Extensions
 {
     /// <summary>
     /// Класс предоставляет набор методов-оберток над сериализатором Newtonsoft.Json.
@@ -12,7 +10,11 @@ namespace Monq.Core.HttpClientExtensions.Extensions
         /// </summary>
         /// <typeparam name="T">Тип объекта, в который требуется провести десериализацию.</typeparam>
         /// <param name="value">Строка с данными, которые требуется десериализовать.</param>
-        public static T? JsonToObject<T>(this string value) =>
-            RestHttpClientSerializer.Deserialize<T>(value);
+        public static T? JsonToObject<T>(this string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return default(T);
+            return RestHttpClientSerializer.Deserialize<T>(value);
+        }
     }
 }

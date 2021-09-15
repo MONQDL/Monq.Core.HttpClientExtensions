@@ -12,7 +12,7 @@ namespace Monq.Core.HttpClientExtensions.TestApp
         Task<TestModel> TestApi();
     }
 
-    public class TestService : BasicSingleHttpService<ServiceUriOptions>, ITestService
+    public class TestService : RestHttpClientFromOptions<ServiceUriOptions>, ITestService
     {
         /// <summary>
         /// Инициализирует новый экземпляр класса <see cref="TestService" />.
@@ -25,25 +25,24 @@ namespace Monq.Core.HttpClientExtensions.TestApp
         /// <exception cref="System.ArgumentNullException">baseUri - Не указан базовый Uri сервиса.</exception>
         public TestService(
             IOptions<ServiceUriOptions> optionsAccessor,
+            HttpClient httpClient,
             ILoggerFactory loggerFactory,
             BasicHttpServiceOptions configuration,
-            IHttpContextAccessor httpContextAccessor,
-            HttpMessageHandler? httpMessageInvoker = null) : 
-            base(optionsAccessor, 
-                loggerFactory, 
-                configuration, 
-                httpContextAccessor, 
-                optionsAccessor.Value.TestServiceUri, 
-                httpMessageInvoker)
+            IHttpContextAccessor httpContextAccessor) :
+            base(optionsAccessor,
+                httpClient,
+                loggerFactory,
+                configuration,
+                httpContextAccessor,
+                optionsAccessor.Value.TestServiceUri)
         {
         }
 
         public async Task<TestModel> TestApi()
         {
-            using var client = CreateRestHttpClient();
-            var result = await client.Get<TestModel>("posts/1");
+            var result = await Get<TestModel>("posts/1");
 
-            return result.ResultObject;
+            return result.ResultObject!;
         }
     }
 }

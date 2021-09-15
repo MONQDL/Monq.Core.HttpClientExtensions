@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>4.1.1</Version>
+    <Version>5.0.0</Version>
     <VersionSuffix>$(VersionSuffix)</VersionSuffix>
     <Version Condition=" '$(VersionSuffix)' != '' ">$(Version)-$(VersionSuffix)</Version>
     <IsPackable>true</IsPackable>
@@ -12,7 +12,7 @@
     <PackageId>Monq.Core.HttpClientExtensions</PackageId>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <PackageTags>http-client rest microservice library openid</PackageTags>
+    <PackageTags>http-client rest microservice library openid polly</PackageTags>
     <PackageProjectUrl>https://github.com/MONQDL/Monq.Core.HttpClientExtensions</PackageProjectUrl>
     <RepositoryUrl>https://github.com/MONQDL/Monq.Core.HttpClientExtensions</RepositoryUrl>
     <Description>The HTTP client extensions for the microservice communication with openid support.</Description>
@@ -39,6 +39,10 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="3.1.14" Condition="'$(TargetFramework)' == 'netcoreapp3.1'" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.14" Condition="'$(TargetFramework)' == 'netcoreapp3.1'" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="3.1.14" Condition="'$(TargetFramework)' == 'netcoreapp3.1'" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>

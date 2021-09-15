@@ -28,7 +28,7 @@ namespace Monq.Core.HttpClientExtensions.Extensions
                 var constructedListType = listType.MakeGenericType(genericTypeArguments);
 
                 var instance = Activator.CreateInstance(constructedListType);
-                resultMessage.ResultObject = (TResult)instance;
+                resultMessage.ResultObject = (TResult)instance!;
             }
             else
                 resultMessage.ResultObject = default;

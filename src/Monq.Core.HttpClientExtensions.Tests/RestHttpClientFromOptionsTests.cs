@@ -4,17 +4,19 @@ using Microsoft.Extensions.Options;
 using Monq.Core.HttpClientExtensions.Tests.Models;
 using Monq.Core.HttpClientExtensions.Tests.Stubs;
 using Moq;
+using Moq.Protected;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace Monq.Core.HttpClientExtensions.Tests
 {
-    public class BasicHttpServiceTests
+    public class RestHttpClientFromOptionsTests
     {
         readonly Mock<IOptions<ServiceOptions>> _optionsMoq;
 
@@ -26,7 +28,7 @@ namespace Monq.Core.HttpClientExtensions.Tests
         readonly ILoggerFactory _loggerFactory = new StubLoggerFactory(new List<StubLogger>());
         readonly BasicHttpServiceOptions _configuration = new BasicHttpServiceOptions();
 
-        public BasicHttpServiceTests()
+        public RestHttpClientFromOptionsTests()
         {
             _optionsMoq = new Mock<IOptions<ServiceOptions>>();
             _optionsMoq
@@ -43,12 +45,12 @@ namespace Monq.Core.HttpClientExtensions.Tests
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Headers.Add("Authorization", "Bearer token355");
 
-            var httpService = CreateBasicHttpService(CreateDefaultResponseHandler(HttpStatusCode.Unauthorized), httpContext);
-            using (var client = httpService.CreateRestHttpClient())
-            {
-                Assert.Equal("token355", client.DefaultRequestHeaders?.Authorization?.Parameter);
-                Assert.Equal("Bearer", client.DefaultRequestHeaders?.Authorization?.Scheme);
-            }
+            var client = new HttpClient(CreateDefaultResponseHandler(HttpStatusCode.Unauthorized));
+
+            var httpService = CreateBasicHttpService(client, httpContext);
+
+            Assert.Equal("token355", client.DefaultRequestHeaders?.Authorization?.Parameter);
+            Assert.Equal("Bearer", client.DefaultRequestHeaders?.Authorization?.Scheme);
         }
 
         [Fact(DisplayName = "Проверка НЕустановки Bearer token из HttpContextAccessor.")]
@@ -56,12 +58,10 @@ namespace Monq.Core.HttpClientExtensions.Tests
         {
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Headers.Add("Authorization", "Bearetoken355");
+            var client = new HttpClient(CreateDefaultResponseHandler(HttpStatusCode.Unauthorized));
 
-            var httpService = CreateBasicHttpService(CreateDefaultResponseHandler(HttpStatusCode.Unauthorized), httpContext);
-            using (var client = httpService.CreateRestHttpClient())
-            {
-                Assert.Null(client.DefaultRequestHeaders.Authorization);
-            }
+            var httpService = CreateBasicHttpService(client, httpContext);
+            Assert.Null(client.DefaultRequestHeaders.Authorization);
         }
 
         [Fact(DisplayName = "Добавить слэш в BaseUri, если требуется.")]
@@ -77,11 +77,10 @@ namespace Monq.Core.HttpClientExtensions.Tests
                     ServiceUri = "http://unittest"
                 });
 
-            var httpService = CreateBasicSingleHttpService(CreateDefaultResponseHandler(HttpStatusCode.Unauthorized), httpContext, _optionsMoq.Object);
-            using (var client = httpService.CreateRestHttpClient())
-            {
-                Assert.Equal(new Uri("http://unittest/"), client.BaseAddress);
-            }
+            var client = new HttpClient(CreateDefaultResponseHandler(HttpStatusCode.Unauthorized));
+
+            var httpService = CreateRestHttpClientFromOptions(client, httpContext, _optionsMoq.Object);
+            Assert.Equal(new Uri("http://unittest/"), client.BaseAddress);
         }
 
         [Fact(DisplayName = "Выполнить запрос по абсолютному Uri.")]
@@ -97,13 +96,12 @@ namespace Monq.Core.HttpClientExtensions.Tests
                     ServiceUri = "http://unittest"
                 });
 
-            var httpService = CreateBasicSingleHttpService(CreateDefaultResponseHandler(HttpStatusCode.OK), httpContext, _optionsMoq.Object);
-            using (var client = httpService.CreateRestHttpClient())
-            {
-                var result = await client.Get<IList<Service>>("http://unittest/api/services", TimeSpan.FromSeconds(5));
+            var client = new HttpClient(CreateDefaultResponseHandler(HttpStatusCode.OK));
 
-                Assert.Equal(result.ResultObject, _testCollection);
-            }
+            var httpService = CreateRestHttpClientFromOptions(client, httpContext, _optionsMoq.Object);
+            var result = await httpService.Get<IList<Service>>("http://unittest/api/services");
+
+            Assert.Equal(result.ResultObject, _testCollection);
         }
 
         [Fact(DisplayName = "Выполнить запрос по относительному Uri.")]
@@ -119,43 +117,48 @@ namespace Monq.Core.HttpClientExtensions.Tests
                     ServiceUri = "http://unittest"
                 });
 
-            var httpService = CreateBasicSingleHttpService(CreateDefaultResponseHandler(HttpStatusCode.OK), httpContext, _optionsMoq.Object);
-            using (var client = httpService.CreateRestHttpClient())
-            {
-                var result = await client.Get<IList<Service>>("api/services", TimeSpan.FromSeconds(5));
+            var client = new HttpClient(CreateDefaultResponseHandler(HttpStatusCode.OK));
+            var httpService = CreateRestHttpClientFromOptions(client, httpContext, _optionsMoq.Object);
+            var result = await httpService.Get<IList<Service>>("api/services", TimeSpan.FromSeconds(5));
 
-                Assert.Equal(result.ResultObject, _testCollection);
-            }
+            Assert.Equal(result.ResultObject, _testCollection);
         }
 
-        BasicHttpServiceMock CreateBasicHttpService(FakeResponseHandler fakeResponseHandler, HttpContext? httpContext)
+        RestHttpClientMock CreateBasicHttpService(HttpClient httpClient, HttpContext? httpContext)
         {
-            return new BasicHttpServiceMock(
+            return new RestHttpClientMock(
+                        httpClient,
+                       _loggerFactory,
+                       _configuration,
+                       new HttpContextAccessorStub(httpContext ?? new DefaultHttpContext()));
+        }
+
+        RestHttpClientFromOptionsMock CreateRestHttpClientFromOptions(HttpClient httpClient, HttpContext? httpContext, IOptions<ServiceOptions> optionsAccessor)
+        {
+            return new RestHttpClientFromOptionsMock(
+                       optionsAccessor ?? _optionsMoq.Object,
+                       httpClient,
                        _loggerFactory,
                        _configuration,
                        new HttpContextAccessorStub(httpContext ?? new DefaultHttpContext()),
-                       fakeResponseHandler);
+                       optionsAccessor.Value.ServiceUri);
         }
 
-        BasicSingleHttpServiceMock CreateBasicSingleHttpService(FakeResponseHandler fakeResponseHandler, HttpContext? httpContext, IOptions<ServiceOptions> optionsAccessor)
-        {
-            return new BasicSingleHttpServiceMock(
-                       optionsAccessor,
-                       _loggerFactory,
-                       _configuration,
-                       new HttpContextAccessorStub(httpContext ?? new DefaultHttpContext()),
-                       fakeResponseHandler);
-        }
-
-        FakeResponseHandler CreateDefaultResponseHandler(HttpStatusCode responseCode)
+        HttpMessageHandler CreateDefaultResponseHandler(HttpStatusCode responseCode)
         {
             var modelJson = JsonConvert.SerializeObject(_testCollection);
-            var fakeResponseHandler = new FakeResponseHandler();
 
-            const string uri = "http://unittest/api/services";
+            var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
 
-            fakeResponseHandler.AddFakeResponse(new Uri(uri), new HttpResponseMessage(responseCode), modelJson);
-            return fakeResponseHandler;
+            mockHttpMessageHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = responseCode,
+                    Content = new StringContent(modelJson),
+                });
+
+            return mockHttpMessageHandler.Object;
         }
     }
 }
