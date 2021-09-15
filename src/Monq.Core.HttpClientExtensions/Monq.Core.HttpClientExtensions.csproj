@@ -12,7 +12,7 @@
     <PackageId>Monq.Core.HttpClientExtensions</PackageId>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <PackageTags>http-client rest microservice library openid polly</PackageTags>
+    <PackageTags>HttpClient HttpClientFactory exception rest microservice library openid polly</PackageTags>
     <PackageProjectUrl>https://github.com/MONQDL/Monq.Core.HttpClientExtensions</PackageProjectUrl>
     <RepositoryUrl>https://github.com/MONQDL/Monq.Core.HttpClientExtensions</RepositoryUrl>
     <Description>The HTTP client extensions for the microservice communication with openid support.</Description>
