@@ -282,6 +282,18 @@ public async Task<RestHttpResponseMessage<IList<RemoteServiceModel>> FilterInsta
     return result;
 }
 ```
+- You can set custom request headers, that will be send during each request. The headers are sent in the HttpRequestMessage, not in the HttpClient.DefaultRequestHeaders.
+```
+public async Task<TestModel> TestApi(string auth)
+{
+    var headers = new HeaderDictionary();
+    headers.Add("Authorization", $"Bearer {auth}");
+
+    var result = await Get<TestModel>("posts/1", TimeSpan.FromSeconds(10), headers);
+
+    return result.ResultObject!;
+}
+```
 
 ### Using Polly
 
@@ -379,8 +391,9 @@ In the v5 the library was changed a lot. So you must follow migration steps.
 4. Remove all namespace references `Monq.Core.HttpClientExtensions.Services`.
 5. Rename all classes `BasicHttpServiceOptions` to `RestHttpClientOptions`.
 6. Rename all classes `BasicHttpServiceHeaderOptions` to `RestHttpClientHeaderOptions`.
-6. Change all constructors for inherited classes from `RestHttpClient` and `RestHttpClientFromOptions` to its coresponding versions.
-7. In the class methods remove all strings `using var client = CreateRestHttpClient();` or `using (var client = CreateRestHttpClient()) { <content must stay> }`.
-8. In the class methods remove remove change all strings `client.Get()` or `client.Post()` and others to just `Get()` or `Post()`.
-8. In the Startup.cs change `services.AddTransient<IService, Service>()` to `servicese.AddHttpClient<IService, Service>()` for all http services inherited from the `RestHttpClient` and `RestHttpClientFromOptions`.
-9. Change all unit tests to the new version described in the [Testing features](#testing-features).
+7. Change all constructors for inherited classes from `RestHttpClient` and `RestHttpClientFromOptions` to its coresponding versions.
+8. In the class methods remove all strings `using var client = CreateRestHttpClient();` or `using (var client = CreateRestHttpClient()) { <content must stay> }`.
+9. In the class methods remove remove change all strings `client.Get()` or `client.Post()` and others to just `Get()` or `Post()`.
+10. In the Startup.cs change `services.AddTransient<IService, Service>()` to `servicese.AddHttpClient<IService, Service>()` for all http services inherited from the `RestHttpClient` and `RestHttpClientFromOptions`.
+11. In the Startup.cs change `services.AddScoped<IService, Service>()` to `servicese.AddHttpClient<IService, Service>()` for all http services inherited from the `RestHttpClient` and `RestHttpClientFromOptions`.
+12. Change all unit tests to the new version described in the [Testing features](#testing-features).

@@ -69,11 +69,11 @@ namespace Monq.Core.HttpClientExtensions.Tests
             var logger = _loggers.First();
 
             Assert.Equal(2, logger.LoggingEvents.Count);
-            Assert.Equal($"Start downstream request GET {uri} with http headers=.", logger.LoggingEvents[0]);
-            Assert.Contains($"Downstream request GET {uri} with http headers= finished with StatusCode {(int)HttpStatusCode.OK} at", logger.LoggingEvents[1]);
+            Assert.Equal($"Start downstream request GET {uri} with http forwarded headers=.", logger.LoggingEvents[0]);
+            Assert.Contains($"Downstream request GET {uri} with http forwarded headers= finished with StatusCode {(int)HttpStatusCode.OK} at", logger.LoggingEvents[1]);
         }
 
-        [Fact(DisplayName = "Выполнить GET запрос по абсолютному URI с пробросом заголовков.")]
+        [Fact(DisplayName = "Выполнить GET запрос по абсолютному URI с пробросом заголовков.", Skip = "DefaultRequestHeaders is not using now to send headers.")]
         public async Task ShouldProperlyMakeGetRequestByAbsoluteUriWithForwardedHeaders()
         {
             var modelJson = JsonConvert.SerializeObject(new Service[] {
@@ -115,8 +115,8 @@ namespace Monq.Core.HttpClientExtensions.Tests
             Assert.Equal("Service2", services[1].Name);
             var _logger = _loggers.First();
             Assert.Equal(2, _logger.LoggingEvents.Count);
-            Assert.Equal($"Start downstream request GET {uri} with http headers=[{TraceEventIdHeader}, {traceEventId}], [{UserspaceIdHeader}, {userspaceId}].", _logger.LoggingEvents[0]);
-            Assert.Contains($"Downstream request GET {uri} with http headers=[{TraceEventIdHeader}, {traceEventId}], [{UserspaceIdHeader}, {userspaceId}] finished with StatusCode {(int)HttpStatusCode.OK} at", _logger.LoggingEvents[1]);
+            Assert.Equal($"Start downstream request GET {uri} with http forwarded headers=[{TraceEventIdHeader}, {traceEventId}], [{UserspaceIdHeader}, {userspaceId}].", _logger.LoggingEvents[0]);
+            Assert.Contains($"Downstream request GET {uri} with http forwarded headers=[{TraceEventIdHeader}, {traceEventId}], [{UserspaceIdHeader}, {userspaceId}] finished with StatusCode {(int)HttpStatusCode.OK} at", _logger.LoggingEvents[1]);
         }
 
         [Fact(DisplayName = "Выполнить GET запрос по относительному URI.")]
@@ -147,8 +147,8 @@ namespace Monq.Core.HttpClientExtensions.Tests
             Assert.Equal("Service2", services[1].Name);
             var _logger = _loggers.First();
             Assert.Equal(2, _logger.LoggingEvents.Count);
-            Assert.Equal($"Start downstream request GET {fullUri} with http headers=.", _logger.LoggingEvents[0]);
-            Assert.Contains($"Downstream request GET {fullUri} with http headers= finished with StatusCode {(int)HttpStatusCode.OK} at", _logger.LoggingEvents[1]);
+            Assert.Equal($"Start downstream request GET {fullUri} with http forwarded headers=.", _logger.LoggingEvents[0]);
+            Assert.Contains($"Downstream request GET {fullUri} with http forwarded headers= finished with StatusCode {(int)HttpStatusCode.OK} at", _logger.LoggingEvents[1]);
         }
 
         [Fact(DisplayName = "Исключение на провалившемся GET запросе.")]
@@ -170,8 +170,8 @@ namespace Monq.Core.HttpClientExtensions.Tests
             Assert.Contains($"Response body: {modelJson}.", ex.Message);
 
             var _logger = _loggers.First();
-            Assert.Equal($"Start downstream request GET {uri} with http headers=.", _logger.LoggingEvents[0]);
-            Assert.Contains($"Downstream request GET {uri} with http headers= failed with StatusCode {(int)HttpStatusCode.BadRequest} at", _logger.LoggingEvents[1]);
+            Assert.Equal($"Start downstream request GET {uri} with http forwarded headers=.", _logger.LoggingEvents[0]);
+            Assert.Contains($"Downstream request GET {uri} with http forwarded headers= failed with StatusCode {(int)HttpStatusCode.BadRequest} at", _logger.LoggingEvents[1]);
             Assert.Contains($"Request body: (null). Response body: {modelJson}.", _logger.LoggingEvents[1]);
         }
 
@@ -194,8 +194,8 @@ namespace Monq.Core.HttpClientExtensions.Tests
             Assert.NotNull(ex);
             Assert.Equal($"Request exception.", ex.Message);
             var _logger = _loggers.First();
-            Assert.Equal($"Start downstream request GET {uri} with http headers=.", _logger.LoggingEvents[0]);
-            Assert.Contains($"Downstream request GET {uri} with http headers= failed with Exception at", _logger.LoggingEvents[1]);
+            Assert.Equal($"Start downstream request GET {uri} with http forwarded headers=.", _logger.LoggingEvents[0]);
+            Assert.Contains($"Downstream request GET {uri} with http forwarded headers= failed with Exception at", _logger.LoggingEvents[1]);
             Assert.Contains("Request body: (null). Response body: . Exception message: Request exception.", _logger.LoggingEvents[1]);
         }
 
@@ -220,8 +220,8 @@ namespace Monq.Core.HttpClientExtensions.Tests
             Assert.Contains($"Request body: {requestJson}. Response body: {modelJson}.", ex.Message);
 
             var _logger = _loggers.First();
-            Assert.Equal($"Start downstream request POST {uri} with http headers=.", _logger.LoggingEvents[0]);
-            Assert.Contains($"Downstream request POST {uri} with http headers= failed with StatusCode {(int)HttpStatusCode.InternalServerError} at", _logger.LoggingEvents[1]);
+            Assert.Equal($"Start downstream request POST {uri} with http forwarded headers=.", _logger.LoggingEvents[0]);
+            Assert.Contains($"Downstream request POST {uri} with http forwarded headers= failed with StatusCode {(int)HttpStatusCode.InternalServerError} at", _logger.LoggingEvents[1]);
             Assert.Contains($"Request body: {requestJson}. Response body: {modelJson}.", _logger.LoggingEvents[1]);
         }
 
@@ -263,10 +263,10 @@ namespace Monq.Core.HttpClientExtensions.Tests
 
             var _logger = _loggers.First();
             Assert.Equal(4, _logger.LoggingEvents.Count);
-            Assert.Equal($"Start downstream request GET {uri} with http headers=.", _logger.LoggingEvents[0]);
+            Assert.Equal($"Start downstream request GET {uri} with http forwarded headers=.", _logger.LoggingEvents[0]);
             Assert.Equal($"Requesting authentication token.", _logger.LoggingEvents[1]);
             Assert.Contains("Authentication token request finished at ", _logger.LoggingEvents[2]);
-            Assert.Contains($"Downstream request GET {uri} with http headers= finished with StatusCode {(int)HttpStatusCode.OK} at", _logger.LoggingEvents[3]);
+            Assert.Contains($"Downstream request GET {uri} with http forwarded headers= finished with StatusCode {(int)HttpStatusCode.OK} at", _logger.LoggingEvents[3]);
 
             Assert.Equal(1, accessTokenRequestCounter);
         }
@@ -297,12 +297,12 @@ namespace Monq.Core.HttpClientExtensions.Tests
             await Assert.ThrowsAsync<ResponseException>(async () => await restHttpClient.Get<IEnumerable<Service>>(uri, TimeSpan.FromSeconds(10)));
 
             var _logger = _loggers.First();
-            Assert.Equal($"Start downstream request GET {uri} with http headers=.", _logger.LoggingEvents[0]);
+            Assert.Equal($"Start downstream request GET {uri} with http forwarded headers=.", _logger.LoggingEvents[0]);
             Assert.Equal($"Requesting authentication token.", _logger.LoggingEvents[1]);
             Assert.Contains("Authentication token request finished at ", _logger.LoggingEvents[2]);
             Assert.Equal($"Requesting authentication token.", _logger.LoggingEvents[3]);
             Assert.Contains("Authentication token request finished at ", _logger.LoggingEvents[4]);
-            Assert.Contains($"Downstream request GET {uri} with http headers= failed with StatusCode {(int)HttpStatusCode.Unauthorized} at", _logger.LoggingEvents[5]);
+            Assert.Contains($"Downstream request GET {uri} with http forwarded headers= failed with StatusCode {(int)HttpStatusCode.Unauthorized} at", _logger.LoggingEvents[5]);
             Assert.Contains($"Request body: (null). Response body: {modelJson}.", _logger.LoggingEvents[5]);
 
             Assert.Equal("trsJ34", RestHttpClient.AccessToken?.AccessToken);

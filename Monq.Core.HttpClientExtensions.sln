@@ -18,7 +18,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Monq.Core.HttpClientExtensi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Monq.Core.HttpClientExtensions.Tests", "src\Monq.Core.HttpClientExtensions.Tests\Monq.Core.HttpClientExtensions.Tests.csproj", "{753009A6-624F-42C6-8C43-FB9FF9E34F4A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Monq.Core.HttpClientExtensions.TestApp", "src\Monq.Core.HttpClientExtensions.TestApp\Monq.Core.HttpClientExtensions.TestApp.csproj", "{8C52D2C2-1EFD-48A3-8DFB-D8D868424E27}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Monq.Core.HttpClientExtensions.TestApp", "samples\Monq.Core.HttpClientExtensions.TestApp\Monq.Core.HttpClientExtensions.TestApp.csproj", "{8C52D2C2-1EFD-48A3-8DFB-D8D868424E27}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{05F7D025-2280-48E9-A6E1-753B40EAF64A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monq.Core.HttpClientExtensions.TestConsoleApp", "samples\Monq.Core.HttpClientExtensions.TestConsoleApp\Monq.Core.HttpClientExtensions.TestConsoleApp.csproj", "{EAF0F446-2A8A-455B-BEA9-AEF239A24D12}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,6 +42,10 @@ Global
 		{8C52D2C2-1EFD-48A3-8DFB-D8D868424E27}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8C52D2C2-1EFD-48A3-8DFB-D8D868424E27}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8C52D2C2-1EFD-48A3-8DFB-D8D868424E27}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EAF0F446-2A8A-455B-BEA9-AEF239A24D12}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EAF0F446-2A8A-455B-BEA9-AEF239A24D12}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EAF0F446-2A8A-455B-BEA9-AEF239A24D12}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EAF0F446-2A8A-455B-BEA9-AEF239A24D12}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -45,7 +53,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{FFF08A51-A2C5-4434-BC0E-1EA701BFFBAF} = {72AA1F10-76E8-4295-AA52-C1121F54A0E9}
 		{753009A6-624F-42C6-8C43-FB9FF9E34F4A} = {72AA1F10-76E8-4295-AA52-C1121F54A0E9}
-		{8C52D2C2-1EFD-48A3-8DFB-D8D868424E27} = {72AA1F10-76E8-4295-AA52-C1121F54A0E9}
+		{8C52D2C2-1EFD-48A3-8DFB-D8D868424E27} = {05F7D025-2280-48E9-A6E1-753B40EAF64A}
+		{EAF0F446-2A8A-455B-BEA9-AEF239A24D12} = {05F7D025-2280-48E9-A6E1-753B40EAF64A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {04779810-FF98-44D8-94C2-59409E960B6E}
