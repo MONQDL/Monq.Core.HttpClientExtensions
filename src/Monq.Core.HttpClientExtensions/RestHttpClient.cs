@@ -10,6 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -127,18 +128,22 @@ namespace Monq.Core.HttpClientExtensions
         /// <typeparam name="TResult">The Result type.</typeparam>
         /// <param name="uri">The Uri of the service being called.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <exception cref="ResponseException"></exception>
-        public Task<RestHttpResponseMessage<TResult?>> Delete<TResult>(string uri, CancellationToken cancellationToken = default) =>
-            MakeRequestWithoutBody<TResult?>("DELETE", uri, cancellationToken);
+        public Task<RestHttpResponseMessage<TResult?>> Delete<TResult>(string uri, CancellationToken cancellationToken = default,
+            IHeaderDictionary? headers = default) =>
+            MakeRequestWithoutBody<TResult?>("DELETE", uri, cancellationToken, headers);
 
         /// <summary>
         /// Execute an HTTP DELETE request, return no result.
         /// </summary>
         /// <param name="uri">The Uri of the service being called.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <exception cref="ResponseException"></exception>
-        public Task Delete(string uri, CancellationToken cancellationToken = default) =>
-           MakeRequestWithoutBody("DELETE", uri, cancellationToken);
+        public Task Delete(string uri, CancellationToken cancellationToken = default,
+            IHeaderDictionary? headers = default) =>
+           MakeRequestWithoutBody("DELETE", uri, cancellationToken, headers);
 
         /// <summary>
         /// Execute an HTTP DELETE request with a body of type <typeparamref name = "TRequest" />, do not return the result.
@@ -147,9 +152,11 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="uri">The Uri of the service being called.</param>
         /// <param name="value">The object to serialize as the request body.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <exception cref="ResponseException"></exception>
-        public Task Delete<TRequest>(string uri, TRequest value, CancellationToken cancellationToken = default) =>
-            MakeRequestWithBody<TRequest, object>("DELETE", uri, value, cancellationToken);
+        public Task Delete<TRequest>(string uri, TRequest value, CancellationToken cancellationToken = default,
+            IHeaderDictionary? headers = default) =>
+            MakeRequestWithBody<TRequest, object>("DELETE", uri, value, cancellationToken, headers);
 
         /// <summary>
         /// Execute an HTTP Get request and return the result deserialized to type <typeparamref name = "TResult" />.
@@ -157,9 +164,11 @@ namespace Monq.Core.HttpClientExtensions
         /// <typeparam name="TResult">The query result type.</typeparam>
         /// <param name="uri">The Uri of the service being called.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <exception cref="ResponseException"></exception>
-        public Task<RestHttpResponseMessage<TResult?>> Get<TResult>(string uri, CancellationToken cancellationToken = default) =>
-            MakeRequestWithoutBody<TResult>("GET", uri, cancellationToken);
+        public Task<RestHttpResponseMessage<TResult?>> Get<TResult>(string uri, CancellationToken cancellationToken = default,
+            IHeaderDictionary? headers = default) =>
+            MakeRequestWithoutBody<TResult>("GET", uri, cancellationToken, headers);
 
         /// <summary>
         /// Execute an HTTP PATCH request with a body of type <typeparamref name = "TRequest" />, do not return the result.
@@ -168,9 +177,11 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="uri">The Uri of the service being called.</param>
         /// <param name="value">The object to serialize as the request body.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <exception cref="ResponseException"></exception>
-        public Task Patch<TRequest>(string uri, TRequest value, CancellationToken cancellationToken = default) =>
-            MakeRequestWithBody("PATCH", uri, value, cancellationToken);
+        public Task Patch<TRequest>(string uri, TRequest value, CancellationToken cancellationToken = default,
+            IHeaderDictionary? headers = default) =>
+            MakeRequestWithBody("PATCH", uri, value, cancellationToken, headers);
 
         /// <summary>
         /// Execute an HTTP PATCH request with a body of type <typeparamref name = "TRequest" /> 
@@ -181,11 +192,13 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="uri">The Uri of the service being called.</param>
         /// <param name="value">The object to serialize as the request body.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <exception cref="ResponseException"></exception>
         public Task<RestHttpResponseMessage<TResult?>> Patch<TRequest, TResult>(string uri,
             TRequest value,
-            CancellationToken cancellationToken = default) =>
-            MakeRequestWithBody<TRequest, TResult?>("PATCH", uri, value, cancellationToken);
+            CancellationToken cancellationToken = default,
+            IHeaderDictionary? headers = default) =>
+            MakeRequestWithBody<TRequest, TResult?>("PATCH", uri, value, cancellationToken, headers);
 
         /// <summary>
         /// Execute an HTTP POST request with a body of type <typeparamref name = "TRequest" /> 
@@ -196,11 +209,13 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="uri">The Uri of the service being called.</param>
         /// <param name="value">The object to serialize as the request body.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <exception cref="ResponseException"></exception>
         public Task<RestHttpResponseMessage<TResult?>> Post<TRequest, TResult>(string uri,
             TRequest value,
-            CancellationToken cancellationToken = default) =>
-            MakeRequestWithBody<TRequest, TResult?>("POST", uri, value, cancellationToken);
+            CancellationToken cancellationToken = default,
+            IHeaderDictionary? headers = default) =>
+            MakeRequestWithBody<TRequest, TResult?>("POST", uri, value, cancellationToken, headers);
 
         /// <summary>
         /// Execute an HTTP POST request with a body of type <typeparamref name = "TRequest" />, do not return the result.
@@ -209,9 +224,11 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="uri">The Uri of the service being called.</param>
         /// <param name="value">The object to serialize as the request body.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <exception cref="ResponseException"></exception>
-        public Task Post<TRequest>(string uri, TRequest value, CancellationToken cancellationToken = default) =>
-            MakeRequestWithBody("POST", uri, value, cancellationToken);
+        public Task Post<TRequest>(string uri, TRequest value, CancellationToken cancellationToken = default,
+            IHeaderDictionary? headers = default) =>
+            MakeRequestWithBody("POST", uri, value, cancellationToken, headers);
 
         /// <summary>
         /// Execute an HTTP PUT request with a body of type <typeparamref name = "TRequest" /> 
@@ -222,11 +239,13 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="uri">The Uri of the service being called.</param>
         /// <param name="value">The object to serialize as the request body.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <exception cref="ResponseException"></exception>
         public Task<RestHttpResponseMessage<TResult?>> Put<TRequest, TResult>(string uri,
             TRequest value,
-            CancellationToken cancellationToken = default) =>
-            MakeRequestWithBody<TRequest, TResult?>("PUT", uri, value, cancellationToken);
+            CancellationToken cancellationToken = default,
+            IHeaderDictionary? headers = default) =>
+            MakeRequestWithBody<TRequest, TResult?>("PUT", uri, value, cancellationToken, headers);
 
         /// <summary>
         /// Execute an HTTP PUT request with a body of type <typeparamref name = "TRequest" />, do not return the result.
@@ -235,9 +254,11 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="uri">The Uri of the service being called.</param>
         /// <param name="value">The object to serialize as the request body.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <exception cref="ResponseException"></exception>
-        public Task Put<TRequest>(string uri, TRequest value, CancellationToken cancellationToken = default) =>
-            MakeRequestWithBody("PUT", uri, value, cancellationToken);
+        public Task Put<TRequest>(string uri, TRequest value, CancellationToken cancellationToken = default,
+            IHeaderDictionary? headers = default) =>
+            MakeRequestWithBody("PUT", uri, value, cancellationToken, headers);
 
         /// <summary>
         /// Get AccessToken using <see cref="AuthorizationRequest"/> handler.
@@ -358,7 +379,7 @@ namespace Monq.Core.HttpClientExtensions
 
             _log.LogError(
                 new EventId(TraceConstants.DownServiceEventId),
-                "Downstream request {Method} {Path} with http headers={HttpForwardedHeaders} failed with " +
+                "Downstream request {Method} {Path} with http forwarded headers={HttpForwardedHeaders} failed with " +
                 "StatusCode {StatusCode} at {elapsedMilliseconds} ms. Request body: {@ServiceRequestData}. " +
                 "Response body: {@ServiceResponseData}.",
                 method,
@@ -378,9 +399,10 @@ namespace Monq.Core.HttpClientExtensions
         void LogEndEvent(string method, Uri uri, HttpStatusCode statusCode, Stopwatch sw)
         {
             var headers = GetForwardedHeaders();
+
             _log.LogInformation(
                      new EventId(TraceConstants.DownServiceEventId),
-                     "Downstream request {Method} {Path} with http headers={HttpForwardedHeaders} finished with " +
+                     "Downstream request {Method} {Path} with http forwarded headers={HttpForwardedHeaders} finished with " +
                      "StatusCode {StatusCode} at {elapsedMilliseconds} ms.",
                      method,
                      uri.ToString(),
@@ -417,41 +439,25 @@ namespace Monq.Core.HttpClientExtensions
                      headers);
         }
 
-        void PassThroughForwardedHeaders()
-        {
-            if (HttpContextAccessor is null)
-                return;
-
-            foreach (var header in Configuration.RestHttpClientHeaderOptions.ForwardedHeaders)
-            {
-                var requestHeaderValue = (string?)HttpContextAccessor.HttpContext?.Request.Headers[header];
-                if (string.IsNullOrEmpty(requestHeaderValue)
-                    || _httpClient.DefaultRequestHeaders.Contains(header))
-                    continue;
-
-                _httpClient.DefaultRequestHeaders.Add(header, requestHeaderValue);
-            }
-        }
-
         Task MakeRequestWithBody<TRequest>(string requestType,
             string uri,
             TRequest value,
-            CancellationToken? cancellationToken = default) =>
-            MakeRequestWithBody<TRequest, object>(requestType, uri, value, cancellationToken);
+            CancellationToken? cancellationToken = default,
+            IHeaderDictionary? headers = default) =>
+            MakeRequestWithBody<TRequest, object>(requestType, uri, value, cancellationToken, headers);
 
         [return: NotNull]
         protected virtual async Task<RestHttpResponseMessage<TResult?>> MakeRequestWithBody<TRequest, TResult>(
             string requestType,
             string uri,
             TRequest value,
-            CancellationToken? cancellationToken = default)
+            CancellationToken? cancellationToken = default,
+            IHeaderDictionary? headers = default)
         {
             var cts = cancellationToken ?? new CancellationTokenSource(DefaultTimeout).Token;
 
             var sw = new Stopwatch();
             sw.Start();
-            // Forward the specified headers in the options to the downstream services.
-            PassThroughForwardedHeaders();
 
             var fullUri = GetAbsoluteUri(uri);
             LogStartEvent(requestType, fullUri);
@@ -464,22 +470,14 @@ namespace Monq.Core.HttpClientExtensions
                 await SetToken();
 
                 var method = new HttpMethod(requestType);
-                var request = new HttpRequestMessage(method, uri)
-                {
-                    Content = new StringContent(serializedRequestValue, Encoding.UTF8, "application/json")
-                };
-
-                response = await _httpClient.SendAsync(request, cts);
-                response.RequestMessage = request;
+                response = await DoHttpRequest(uri, headers, method, cts, new StringContent(serializedRequestValue, Encoding.UTF8, "application/json"));
 
                 // Refresh token on 401 response.
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     await SetToken(true);
                     // You cannot send the same request 2 times.
-                    var request2 = new HttpRequestMessage(method, uri);
-                    response = await _httpClient.SendAsync(request2, cts);
-                    response.RequestMessage = request2;
+                    response = await DoHttpRequest(uri, headers, method, cts, new StringContent(serializedRequestValue, Encoding.UTF8, "application/json"));
                 }
 
                 var content = response.Content;
@@ -502,19 +500,22 @@ namespace Monq.Core.HttpClientExtensions
             return new RestHttpResponseMessage<TResult?>(response) { ResultObject = result.JsonToObject<TResult>() };
         }
 
-        async Task MakeRequestWithoutBody(string requestType, string uri, CancellationToken? cancellationToken = default) =>
-            await MakeRequestWithoutBody<object>(requestType, uri, cancellationToken);
+        async Task MakeRequestWithoutBody(string requestType,
+            string uri,
+            CancellationToken? cancellationToken = default,
+            IHeaderDictionary? headers = default) =>
+            await MakeRequestWithoutBody<object>(requestType, uri, cancellationToken, headers);
 
         [return: NotNull]
-        protected virtual async Task<RestHttpResponseMessage<TResult?>> MakeRequestWithoutBody<TResult>(
-            string requestType, string uri, CancellationToken? cancellationToken = default)
+        protected virtual async Task<RestHttpResponseMessage<TResult?>> MakeRequestWithoutBody<TResult>(string requestType,
+            string uri,
+            CancellationToken? cancellationToken = default,
+            IHeaderDictionary? headers = default)
         {
             var cts = cancellationToken ?? new CancellationTokenSource(DefaultTimeout).Token;
 
             var sw = new Stopwatch();
             sw.Start();
-            // Forward the specified headers in the options to the downstream services.
-            PassThroughForwardedHeaders();
 
             var fullUri = GetAbsoluteUri(uri);
             LogStartEvent(requestType, fullUri);
@@ -526,19 +527,14 @@ namespace Monq.Core.HttpClientExtensions
                 await SetToken();
 
                 var method = new HttpMethod(requestType);
-
-                var request = new HttpRequestMessage(method, uri);
-                response = await _httpClient.SendAsync(request, cts);
-                response.RequestMessage = request;
+                response = await DoHttpRequest(uri, headers, method, cts);
 
                 // Refresh token on 401 response.
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     await SetToken(true);
                     // You cannot send the same request 2 times.
-                    var request2 = new HttpRequestMessage(method, uri);
-                    response = await _httpClient.SendAsync(request2, cts);
-                    response.RequestMessage = request2;
+                    response = await DoHttpRequest(uri, headers, method, cts);
                 }
 
                 var content = response.Content;
@@ -559,6 +555,49 @@ namespace Monq.Core.HttpClientExtensions
             LogEndEvent(requestType, fullUri, response.StatusCode, sw);
 
             return new RestHttpResponseMessage<TResult?>(response) { ResultObject = result.JsonToObject<TResult>() };
+        }
+
+        async Task<HttpResponseMessage> DoHttpRequest(string uri,
+            IHeaderDictionary? headers,
+            HttpMethod method,
+            CancellationToken cts,
+            HttpContent? content = default)
+        {
+            var request = new HttpRequestMessage(method, uri);
+            if (content is not null)
+                request.Content = content;
+            SetHttpRequestHeaders(request, headers);
+
+            var response = await _httpClient.SendAsync(request, cts);
+            response.RequestMessage = request;
+            return response;
+        }
+
+        void SetHttpRequestHeaders(HttpRequestMessage request, IHeaderDictionary? headers)
+        {
+            if (headers is not null && headers.Any())
+                foreach (var header in headers)
+                {
+                    request.Headers.Add(header.Key, header.Value.ToArray());
+                }
+            // Forward the specified headers in the options to the downstream services.
+            PassThroughForwardedHeaders(request);
+        }
+
+        void PassThroughForwardedHeaders(HttpRequestMessage requestMessage)
+        {
+            if (HttpContextAccessor is null)
+                return;
+
+            foreach (var header in Configuration.RestHttpClientHeaderOptions.ForwardedHeaders)
+            {
+                var requestHeaderValue = (string?)HttpContextAccessor.HttpContext?.Request.Headers[header];
+                if (string.IsNullOrEmpty(requestHeaderValue)
+                    || requestMessage.Headers.Contains(header))
+                    continue;
+
+                requestMessage.Headers.Add(header, requestHeaderValue);
+            }
         }
 
         async Task SetToken(bool invokeHandler = false)

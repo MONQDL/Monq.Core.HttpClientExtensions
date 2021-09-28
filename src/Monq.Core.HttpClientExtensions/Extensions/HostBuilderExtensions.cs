@@ -70,5 +70,17 @@ namespace Microsoft.Extensions.DependencyInjection
                     config.AddOptions();
                     config.AddSingleton(resolver => resolver.GetRequiredService<IOptions<RestHttpClientOptions>>().Value);
                 });
+
+        /// <summary>
+        /// Apply http request processing configuration for <see cref = "RestHttpClient" />.
+        /// </summary>
+        /// <param name="hostBuilder">Generic Application Host Builder.</param>
+        public static IHostBuilder ConfigBasicHttpService(this IHostBuilder hostBuilder) =>
+            hostBuilder
+                .ConfigureServices((builderContext, config) =>
+                {
+                    config.AddOptions();
+                    config.AddSingleton(resolver => new RestHttpClientOptions());
+                });
     }
 }

@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Monq.Core.HttpClientExtensions\Monq.Core.HttpClientExtensions.csproj" />
+    <ProjectReference Include="..\..\src\Monq.Core.HttpClientExtensions\Monq.Core.HttpClientExtensions.csproj" />
   </ItemGroup>
 
 </Project>
