@@ -417,7 +417,7 @@ namespace Monq.Core.HttpClientExtensions
             _log.LogError(
                 new EventId(TraceConstants.DownServiceEventId),
                 e,
-                "Downstream request {Method} {Path} with http headers={HttpForwardedHeaders} failed with " +
+                "Downstream request {Method} {Path} with http forwarded headers={HttpForwardedHeaders} failed with " +
                 "Exception at {elapsedMilliseconds} ms. " +
                 "Request body: {@ServiceRequestData}. Response body: {@ServiceResponseData}. Exception message: " + e.Message,
                 method,
@@ -433,7 +433,7 @@ namespace Monq.Core.HttpClientExtensions
             var headers = GetForwardedHeaders();
             _log.LogInformation(
                      new EventId(TraceConstants.DownServiceEventId),
-                     "Start downstream request {Method} {Path} with http headers={HttpForwardedHeaders}.",
+                     "Start downstream request {Method} {Path} with http forwarded headers={HttpForwardedHeaders}.",
                      method,
                      uri.ToString(),
                      headers);
