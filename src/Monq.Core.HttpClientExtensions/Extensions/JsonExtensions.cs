@@ -10,12 +10,14 @@
         /// </summary>
         /// <typeparam name="T">The type of object to deserialize to.</typeparam>
         /// <param name="value">A string with the data to be deserialized. 
+        /// <param name="serializer">Custom serializer for the current request only.</param>
         /// If string is empty, than default(T) will be returned.</param>
-        public static T? JsonToObject<T>(this string? value)
+        public static T? JsonToObject<T>(this string? value, IRestHttpClientSerializer? serializer = default)
         {
             if (string.IsNullOrEmpty(value))
                 return default(T);
-            return RestHttpClientSerializer.Deserialize<T>(value);
+            var jsonSerializer = serializer ?? RestHttpClientSerializer.CurrentSerializer;
+            return jsonSerializer.Deserialize<T>(value);
         }
     }
 }

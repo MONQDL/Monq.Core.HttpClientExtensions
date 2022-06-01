@@ -46,7 +46,10 @@ namespace Monq.Core.HttpClientExtensions.Extensions
         public static Task<HttpResponseMessage> DeleteAsJsonAsync(this HttpClient httpClient, string uri, object value) =>
             MakeRequest(httpClient, "DELETE", uri, value);
 
-        static async Task<HttpResponseMessage> MakeRequest(HttpClient httpClient, string requestType, string uri, object value)
+        static async Task<HttpResponseMessage> MakeRequest(HttpClient httpClient, 
+            string requestType, 
+            string uri, 
+            object value)
         {
             var cts = new CancellationTokenSource();
 

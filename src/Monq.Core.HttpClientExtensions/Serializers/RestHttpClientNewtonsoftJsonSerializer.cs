@@ -4,6 +4,13 @@ namespace Monq.Core.HttpClientExtensions
 {
     public class RestHttpClientNewtonsoftJsonSerializer : IRestHttpClientSerializer
     {
+        static RestHttpClientNewtonsoftJsonSerializer _default = new RestHttpClientNewtonsoftJsonSerializer();
+
+        /// <summary>
+        /// The singleton instance with default options.
+        /// </summary>
+        public static RestHttpClientNewtonsoftJsonSerializer Default => _default;
+
         public Newtonsoft.Json.JsonSerializerSettings Options { get; }
 
         static readonly Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver JsonResolver =
