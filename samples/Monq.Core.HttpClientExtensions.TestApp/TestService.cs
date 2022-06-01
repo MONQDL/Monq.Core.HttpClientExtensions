@@ -40,7 +40,8 @@ namespace Monq.Core.HttpClientExtensions.TestApp
 
         public async Task<TestModel> TestApi()
         {
-            var result = await Get<TestModel>("posts/1", TimeSpan.FromSeconds(10));
+            var result = await Get<TestModel>("posts/1", TimeSpan.FromSeconds(10), 
+                serializer: RestHttpClientSystemTextJsonSerializer.Default);
 
             return result.ResultObject!;
         }

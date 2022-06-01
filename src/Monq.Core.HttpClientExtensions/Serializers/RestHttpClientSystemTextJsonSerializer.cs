@@ -4,6 +4,13 @@ namespace Monq.Core.HttpClientExtensions
 {
     public class RestHttpClientSystemTextJsonSerializer : IRestHttpClientSerializer
     {
+        static RestHttpClientSystemTextJsonSerializer _default = new RestHttpClientSystemTextJsonSerializer();
+
+        /// <summary>
+        /// The singleton instance with default options.
+        /// </summary>
+        public static RestHttpClientSystemTextJsonSerializer Default => _default;
+
         public System.Text.Json.JsonSerializerOptions Options { get; }
 
         public RestHttpClientSystemTextJsonSerializer(Action<System.Text.Json.JsonSerializerOptions>? setupAction = null)

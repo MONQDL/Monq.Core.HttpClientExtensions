@@ -7,6 +7,11 @@ namespace Monq.Core.HttpClientExtensions
         static IRestHttpClientSerializer _currentSerializer = new RestHttpClientNewtonsoftJsonSerializer();
 
         /// <summary>
+        /// Get current configured serializer.
+        /// </summary>
+        public static IRestHttpClientSerializer CurrentSerializer { get => _currentSerializer; }
+
+        /// <summary>
         /// Serialize object to JSON string using the System.Text.Json or Newtonsoft.Json serializer.
         /// </summary>
         /// <typeparam name="TValue">The type of the serialized object.</typeparam>
