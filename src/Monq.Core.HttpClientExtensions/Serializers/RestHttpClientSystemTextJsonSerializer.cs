@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json.Serialization;
 
 namespace Monq.Core.HttpClientExtensions
 {
@@ -16,12 +17,15 @@ namespace Monq.Core.HttpClientExtensions
         public RestHttpClientSystemTextJsonSerializer(Action<System.Text.Json.JsonSerializerOptions>? setupAction = null)
         {
             if (setupAction is null)
+            {
                 Options = new System.Text.Json.JsonSerializerOptions
                 {
                     PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
                     DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
                     PropertyNameCaseInsensitive = true
                 };
+                Options.Converters.Add(new JsonStringEnumConverter());
+            }
             else
             {
                 Options = new System.Text.Json.JsonSerializerOptions();
