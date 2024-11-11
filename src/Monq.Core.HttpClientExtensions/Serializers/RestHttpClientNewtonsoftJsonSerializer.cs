@@ -1,7 +1,10 @@
-﻿using System;
+using System;
 
 namespace Monq.Core.HttpClientExtensions
 {
+    /// <summary>
+    /// NewtonsoftJson serializer for RestHttpClient.
+    /// </summary>
     public class RestHttpClientNewtonsoftJsonSerializer : IRestHttpClientSerializer
     {
         static RestHttpClientNewtonsoftJsonSerializer _default = new RestHttpClientNewtonsoftJsonSerializer();
@@ -11,9 +14,12 @@ namespace Monq.Core.HttpClientExtensions
         /// </summary>
         public static RestHttpClientNewtonsoftJsonSerializer Default => _default;
 
+        /// <summary>
+        /// Serializer options.
+        /// </summary>
         public Newtonsoft.Json.JsonSerializerSettings Options { get; }
 
-        static readonly Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver JsonResolver =
+        static readonly Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver _jsonResolver =
             new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver
             {
                 NamingStrategy = new Newtonsoft.Json.Serialization.CamelCaseNamingStrategy
@@ -22,11 +28,15 @@ namespace Monq.Core.HttpClientExtensions
                 }
             };
 
+        /// <summary>
+        /// Creates new object of <see cref="RestHttpClientNewtonsoftJsonSerializer"/>.
+        /// </summary>
+        /// <param name="setupAction">Custom configuration of the serializer.</param>
         public RestHttpClientNewtonsoftJsonSerializer(Action<Newtonsoft.Json.JsonSerializerSettings>? setupAction = null)
         {
             if (setupAction is null)
             {
-                Options = new Newtonsoft.Json.JsonSerializerSettings() { ContractResolver = JsonResolver };
+                Options = new Newtonsoft.Json.JsonSerializerSettings() { ContractResolver = _jsonResolver };
             }
             else
             {

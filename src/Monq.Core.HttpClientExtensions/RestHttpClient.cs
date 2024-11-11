@@ -1,4 +1,4 @@
-﻿using IdentityModel.Client;
+using IdentityModel.Client;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Monq.Core.HttpClientExtensions.Exceptions;
@@ -22,12 +22,12 @@ namespace Monq.Core.HttpClientExtensions
     /// <seealso cref="HttpClient" />
     public partial class RestHttpClient
     {
-        static readonly object LockObj = new object();
+        static readonly object _lockObj = new object();
 
         /// <summary>
         /// Semaphore for synchronizing AccessToken receiving streams.
         /// </summary>
-        static readonly SemaphoreSlim SemaphoreSlim = new SemaphoreSlim(1, 1);
+        static readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
 
         readonly TimeSpan _defaultTimeout = TimeSpan.FromSeconds(10);
 
@@ -306,7 +306,7 @@ namespace Monq.Core.HttpClientExtensions
             // Obtain new token.
             // If several threads try to call the method for obtaining the Access token at the same time,
             // we will give access to only one.
-            await SemaphoreSlim.WaitAsync();
+            await _semaphoreSlim.WaitAsync();
             var sw = new Stopwatch();
             sw.Start();
             try
@@ -338,7 +338,7 @@ namespace Monq.Core.HttpClientExtensions
             finally
             {
                 sw.Stop();
-                SemaphoreSlim.Release();
+                _semaphoreSlim.Release();
             }
 
             return null;
@@ -349,7 +349,7 @@ namespace Monq.Core.HttpClientExtensions
         /// </summary>
         public static void ResetAccessToken()
         {
-            lock (LockObj)
+            lock (_lockObj)
             {
                 AccessToken = null;
             }
