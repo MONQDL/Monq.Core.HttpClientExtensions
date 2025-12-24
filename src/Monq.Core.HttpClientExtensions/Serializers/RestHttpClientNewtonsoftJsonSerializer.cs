@@ -1,10 +1,12 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Monq.Core.HttpClientExtensions
 {
     /// <summary>
     /// NewtonsoftJson serializer for RestHttpClient.
     /// </summary>
+    [RequiresUnreferencedCode("This class uses Newtonsoft.Json which is not compatible with trimming. Consider using System.Text.Json instead.")]
     public class RestHttpClientNewtonsoftJsonSerializer : IRestHttpClientSerializer
     {
         static RestHttpClientNewtonsoftJsonSerializer _default = new RestHttpClientNewtonsoftJsonSerializer();
@@ -46,12 +48,16 @@ namespace Monq.Core.HttpClientExtensions
         }
 
         /// <inheritdoc />
+        [RequiresUnreferencedCode(
+            "Newtonsoft.Json.JsonConvert.SerializeObject is incompatible with trimming.")]
         public string Serialize<TValue>(TValue value)
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(value, Options);
         }
 
         /// <inheritdoc />
+        [RequiresUnreferencedCode(
+            "Newtonsoft.Json.JsonConvert.DeserializeObject is incompatible with trimming.")]
         public TResult? Deserialize<TResult>(string value)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<TResult>(value, Options);

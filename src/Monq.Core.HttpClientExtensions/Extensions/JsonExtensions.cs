@@ -1,4 +1,6 @@
-﻿namespace Monq.Core.HttpClientExtensions.Extensions
+using System.Diagnostics.CodeAnalysis;
+
+namespace Monq.Core.HttpClientExtensions.Extensions
 {
     /// <summary>
     /// The class provides a set of wrapper methods over the <see cref="RestHttpClientSerializer"/>.
@@ -12,6 +14,8 @@
         /// <param name="value">A string with the data to be deserialized. 
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// If string is empty, than default(T) will be returned.</param>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public static T? JsonToObject<T>(this string? value, IRestHttpClientSerializer? serializer = default)
         {
             if (string.IsNullOrEmpty(value))

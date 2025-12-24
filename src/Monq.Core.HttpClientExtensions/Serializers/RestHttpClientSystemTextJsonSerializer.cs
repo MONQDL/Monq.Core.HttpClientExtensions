@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace Monq.Core.HttpClientExtensions
@@ -44,12 +45,16 @@ namespace Monq.Core.HttpClientExtensions
         }
 
         /// <inheritdoc />
+        [RequiresUnreferencedCode(
+            "System.Text.Json.JsonSerializer.Deserialize is incompatible with trimming.")]
         public string Serialize<TValue>(TValue value)
         {
             return System.Text.Json.JsonSerializer.Serialize(value, Options);
         }
 
         /// <inheritdoc />
+        [RequiresUnreferencedCode(
+            "System.Text.Json.JsonSerializer.Deserialize is incompatible with trimming.")]
         public TResult? Deserialize<TResult>(string value)
         {
             return System.Text.Json.JsonSerializer.Deserialize<TResult>(value, Options);

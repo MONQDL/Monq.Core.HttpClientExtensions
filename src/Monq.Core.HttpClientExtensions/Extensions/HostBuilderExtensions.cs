@@ -1,4 +1,4 @@
-﻿using IdentityModel.Client;
+using IdentityModel.Client;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Monq.Core.HttpClientExtensions;
@@ -42,7 +42,8 @@ namespace Microsoft.Extensions.DependencyInjection
                             Policy = new DiscoveryPolicy { RequireHttps = requireHttps }
                         };
                         var disco = await client.GetDiscoveryDocumentAsync(discoveryDocumentRequest);
-                        if (disco.IsError) throw new DiscoveryEndpointException(disco.Error, disco.Exception);
+                        if (disco.IsError) 
+                            throw new DiscoveryEndpointException(disco.Error, disco.Exception);
 
                         var request = new ClientCredentialsTokenRequest
                         {

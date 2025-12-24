@@ -1,8 +1,10 @@
-﻿using System;
-using System.Runtime.Serialization;
+using System;
 
 namespace Monq.Core.HttpClientExtensions.Exceptions
 {
+    /// <summary>
+    /// Exception throws when discovery endpoint returns error.
+    /// </summary>
     public class DiscoveryEndpointException : Exception
     {
         /// <summary>Initializes a new instance of the <see cref="DiscoveryEndpointException" /> class.</summary>

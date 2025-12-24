@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -60,7 +60,7 @@ namespace Monq.Core.HttpClientExtensions
 
         }
 
-        string AddTrailingSlash(string baseUri)
+        static string AddTrailingSlash(string baseUri)
         {
             if (baseUri.Last() != '/')
                 return baseUri + "/";

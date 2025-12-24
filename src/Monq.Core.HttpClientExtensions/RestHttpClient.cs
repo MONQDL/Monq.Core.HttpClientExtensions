@@ -130,6 +130,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// <exception cref="ResponseException"></exception>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task<RestHttpResponseMessage<TResult?>> Delete<TResult>(string uri,
             CancellationToken cancellationToken = default,
             IHeaderDictionary? headers = default,
@@ -144,6 +146,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// <exception cref="ResponseException"></exception>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task Delete(string uri,
             CancellationToken cancellationToken = default,
             IHeaderDictionary? headers = default,
@@ -160,6 +164,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// <exception cref="ResponseException"></exception>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task Delete<TRequest>(string uri,
             TRequest value,
             CancellationToken cancellationToken = default,
@@ -176,6 +182,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// <exception cref="ResponseException"></exception>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task<RestHttpResponseMessage<TResult?>> Get<TResult>(string uri,
             CancellationToken cancellationToken = default,
             IHeaderDictionary? headers = default,
@@ -192,6 +200,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// <exception cref="ResponseException"></exception>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task Patch<TRequest>(string uri,
             TRequest value,
             CancellationToken cancellationToken = default,
@@ -211,6 +221,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// <exception cref="ResponseException"></exception>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task<RestHttpResponseMessage<TResult?>> Patch<TRequest, TResult>(string uri,
             TRequest value,
             CancellationToken cancellationToken = default,
@@ -230,6 +242,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// <exception cref="ResponseException"></exception>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task<RestHttpResponseMessage<TResult?>> Post<TRequest, TResult>(string uri,
             TRequest value,
             CancellationToken cancellationToken = default,
@@ -247,6 +261,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// <exception cref="ResponseException"></exception>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task Post<TRequest>(string uri,
             TRequest value,
             CancellationToken cancellationToken = default,
@@ -266,6 +282,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// <exception cref="ResponseException"></exception>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task<RestHttpResponseMessage<TResult?>> Put<TRequest, TResult>(string uri,
             TRequest value,
             CancellationToken cancellationToken = default,
@@ -283,6 +301,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// <exception cref="ResponseException"></exception>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task Put<TRequest>(string uri,
             TRequest value,
             CancellationToken cancellationToken = default,
@@ -317,7 +337,7 @@ namespace Monq.Core.HttpClientExtensions
                 _log.LogInformation("Requesting authentication token.");
                 var accessTokenResponse = await handler(_httpClient);
                 sw.Stop();
-                _log.LogInformation("Authentication token request finished at {elapsedMilliseconds} ms.",
+                _log.LogInformation("Authentication token request finished at {ElapsedMilliseconds} ms.",
                     sw.ElapsedMilliseconds);
                 if (accessTokenResponse.IsError)
                 {
@@ -333,7 +353,7 @@ namespace Monq.Core.HttpClientExtensions
             }
             catch (Exception e)
             {
-                _log.LogCritical(e, $"Raised error during authentication token request. Details: {e.Message}");
+                _log.LogCritical(e, "Raised error during authentication token request. Details: {ErrorMessage}", e.Message);
             }
             finally
             {
@@ -410,8 +430,8 @@ namespace Monq.Core.HttpClientExtensions
             _log.LogError(
                 new EventId(TraceConstants.DownServiceEventId),
                 "Downstream request {Method} {Path} with http forwarded headers={HttpForwardedHeaders} failed with " +
-                "StatusCode {StatusCode} at {elapsedMilliseconds} ms. Request body: {@ServiceRequestData}. " +
-                "Response body: {@ServiceResponseData}.",
+                "StatusCode {StatusCode} at {ElapsedMilliseconds} ms. Request body: {ServiceRequestData}. " +
+                "Response body: {ServiceResponseData}.",
                 method,
                 uri.ToString(),
                 headers,
@@ -433,7 +453,7 @@ namespace Monq.Core.HttpClientExtensions
             _log.LogInformation(
                      new EventId(TraceConstants.DownServiceEventId),
                      "Downstream request {Method} {Path} with http forwarded headers={HttpForwardedHeaders} finished with " +
-                     "StatusCode {StatusCode} at {elapsedMilliseconds} ms.",
+                     "StatusCode {StatusCode} at {ElapsedMilliseconds} ms.",
                      method,
                      uri.ToString(),
                      headers,
@@ -448,14 +468,15 @@ namespace Monq.Core.HttpClientExtensions
                 new EventId(TraceConstants.DownServiceEventId),
                 e,
                 "Downstream request {Method} {Path} with http forwarded headers={HttpForwardedHeaders} failed with " +
-                "Exception at {elapsedMilliseconds} ms. " +
-                "Request body: {@ServiceRequestData}. Response body: {@ServiceResponseData}. Exception message: " + e.Message,
+                "Exception at {ElapsedMilliseconds} ms. " +
+                "Request body: {ServiceRequestData}. Response body: {ServiceResponseData}. Exception message: {ErrorMessage}",
                 method,
                 uri.ToString(),
                 headers,
                 sw.ElapsedMilliseconds,
                 requestData,
-                responseData);
+                responseData,
+                e.Message);
         }
 
         void LogStartEvent(string method, Uri uri)
@@ -469,6 +490,8 @@ namespace Monq.Core.HttpClientExtensions
                      headers);
         }
 
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         Task MakeRequestWithBody<TRequest>(string requestType,
             string uri,
             TRequest value,
@@ -477,6 +500,11 @@ namespace Monq.Core.HttpClientExtensions
             IRestHttpClientSerializer? serializer = default) =>
             MakeRequestWithBody<TRequest, object>(requestType, uri, value, cancellationToken, headers, serializer);
 
+        /// <summary>
+        /// Make request without body
+        /// </summary>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         [return: NotNull]
         protected virtual async Task<RestHttpResponseMessage<TResult?>> MakeRequestWithBody<TRequest, TResult>(
             string requestType,
@@ -545,6 +573,8 @@ namespace Monq.Core.HttpClientExtensions
             };
         }
 
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         async Task MakeRequestWithoutBody(string requestType,
             string uri,
             CancellationToken? cancellationToken = default,
@@ -552,6 +582,11 @@ namespace Monq.Core.HttpClientExtensions
             IRestHttpClientSerializer? serializer = default) =>
             await MakeRequestWithoutBody<object>(requestType, uri, cancellationToken, headers, serializer);
 
+        /// <summary>
+        /// Make request without body
+        /// </summary>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         [return: NotNull]
         protected virtual async Task<RestHttpResponseMessage<TResult?>> MakeRequestWithoutBody<TResult>(
             string requestType,
