@@ -1,4 +1,5 @@
-﻿using System.Net.Http;
+using System.Diagnostics.CodeAnalysis;
+using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,6 +17,8 @@ namespace Monq.Core.HttpClientExtensions.Extensions
         /// <param name="httpClient">The HttpClient.</param>
         /// <param name="uri">The request uri.</param>
         /// <param name="value">The request body.</param>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public static Task<HttpResponseMessage> PostAsJsonAsync(this HttpClient httpClient, string uri, object value) =>
             MakeRequest(httpClient, "POST", uri, value);
 
@@ -25,6 +28,8 @@ namespace Monq.Core.HttpClientExtensions.Extensions
         /// <param name="httpClient">The HttpClient.</param>
         /// <param name="uri">The request uri.</param>
         /// <param name="value">The request body.</param>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public static Task<HttpResponseMessage> PutAsJsonAsync(this HttpClient httpClient, string uri, object value) =>
             MakeRequest(httpClient, "PUT", uri, value);
 
@@ -34,6 +39,8 @@ namespace Monq.Core.HttpClientExtensions.Extensions
         /// <param name="httpClient">The HttpClient.</param>
         /// <param name="uri">The request uri.</param>
         /// <param name="value">The request body.</param>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public static Task<HttpResponseMessage> PatchAsJsonAsync(this HttpClient httpClient, string uri, object value) =>
             MakeRequest(httpClient, "PATCH", uri, value);
 
@@ -43,9 +50,13 @@ namespace Monq.Core.HttpClientExtensions.Extensions
         /// <param name="httpClient">The HttpClient.</param>
         /// <param name="uri">The request uri.</param>
         /// <param name="value">The request body.</param>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public static Task<HttpResponseMessage> DeleteAsJsonAsync(this HttpClient httpClient, string uri, object value) =>
             MakeRequest(httpClient, "DELETE", uri, value);
 
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         static async Task<HttpResponseMessage> MakeRequest(HttpClient httpClient, 
             string requestType, 
             string uri, 

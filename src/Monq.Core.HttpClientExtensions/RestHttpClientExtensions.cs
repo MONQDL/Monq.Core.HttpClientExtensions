@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,6 +11,11 @@ namespace Monq.Core.HttpClientExtensions
     /// </summary>
     public partial class RestHttpClient
     {
+        /// <summary>
+        /// Create Timeout CancellationToken.
+        /// </summary>
+        /// <param name="timeout">timeout struct.</param>
+        /// <returns></returns>
         public CancellationTokenSource CreateTimeoutCancelToken(TimeSpan timeout) =>
             new CancellationTokenSource(timeout == default ? DefaultTimeout : timeout);
 
@@ -22,6 +28,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// <exception cref="Exceptions.ResponseException"></exception>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task<RestHttpResponseMessage<TResult?>> Get<TResult>(
             string uri,
             TimeSpan timeout,
@@ -41,6 +49,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// <exception cref="Exceptions.ResponseException"></exception>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task<RestHttpResponseMessage<TResult?>> Post<TRequest, TResult>(
             string uri,
             TRequest value,
@@ -59,6 +69,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// <exception cref="Exceptions.ResponseException"></exception>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task Post<TRequest>(
             string uri,
             TRequest value,
@@ -79,6 +91,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// <exception cref="Exceptions.ResponseException"></exception>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task<RestHttpResponseMessage<TResult?>> Put<TRequest, TResult>(
             string uri,
             TRequest value,
@@ -97,6 +111,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// <exception cref="Exceptions.ResponseException"></exception>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task Put<TRequest>(
             string uri,
             TRequest value,
@@ -115,6 +131,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// <exception cref="Exceptions.ResponseException"></exception>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task Patch<TRequest>(
             string uri,
             TRequest value,
@@ -135,6 +153,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// <exception cref="Exceptions.ResponseException"></exception>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task<RestHttpResponseMessage<TResult?>> Patch<TRequest, TResult>(
             string uri,
             TRequest value,
@@ -150,6 +170,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="timeout">The timeout waiting for a response.</param>
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task Delete(string uri, TimeSpan timeout,
             IHeaderDictionary? headers = default,
             IRestHttpClientSerializer? serializer = default) =>
@@ -164,6 +186,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// <exception cref="Exceptions.ResponseException"></exception>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task<RestHttpResponseMessage<TResult?>> Delete<TResult>(
             string uri,
             TimeSpan timeout,
@@ -181,6 +205,8 @@ namespace Monq.Core.HttpClientExtensions
         /// <param name="headers">The Http request headers, that will be set to the HttpRequestMessage.</param>
         /// <param name="serializer">Custom serializer for the current request only.</param>
         /// <exception cref="Exceptions.ResponseException"></exception>
+        [RequiresUnreferencedCode(
+            "Serializers is incompatible with trimming.")]
         public Task Delete<TRequest>(
             string uri,
             TRequest value,
