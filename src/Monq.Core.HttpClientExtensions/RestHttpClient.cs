@@ -103,11 +103,6 @@ namespace Monq.Core.HttpClientExtensions
 
             _log = loggerFactory.CreateLogger<RestHttpClient>();
 
-            // To reuse the HttpClient instance, we will use the cancellation token to manage timeouts.
-            // To do this, you need to set the main timeout to the maximum value,
-            // because it will override the value specified in the cancellation token.
-            _httpClient.Timeout = System.Threading.Timeout.InfiniteTimeSpan;
-
             if (HttpContextAccessor?.HttpContext is not null
                 && HttpContextAccessor.HttpContext.Request.Headers.TryGetValue(AuthorizationHeader, out var authorizeHeader)
                 && !string.IsNullOrEmpty(authorizeHeader))
