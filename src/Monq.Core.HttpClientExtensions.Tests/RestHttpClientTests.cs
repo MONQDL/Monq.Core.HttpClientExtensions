@@ -1,4 +1,4 @@
-﻿using IdentityModel.Client;
+using IdentityModel.Client;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Monq.Core.HttpClientExtensions.Exceptions;
@@ -384,6 +384,31 @@ namespace Monq.Core.HttpClientExtensions.Tests
                 .ToList();
             Assert.Empty(results.Where(x => x.OriginalResponse?.RequestMessage?.Headers.Count() != 2));
             Assert.Equal(2 * totalRequests, results.Where(x => x.ResultObject is not null).SelectMany(x => x.ResultObject).Count());
+        }
+
+        [Fact(DisplayName = "Проверка установки Bearer token из HttpContextAccessor.")]
+        public void ShouldProperlySetBearerTokenFromRequest()
+        {
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers.Add("Authorization", "Bearer token355");
+
+            var client = new HttpClient(CreateDefaultResponseHandler(HttpStatusCode.Unauthorized, "{}"));
+
+            var httpService = CreateRestHttpClient(client, httpContext);
+
+            Assert.Equal("token355", client.DefaultRequestHeaders?.Authorization?.Parameter);
+            Assert.Equal("Bearer", client.DefaultRequestHeaders?.Authorization?.Scheme);
+        }
+
+        [Fact(DisplayName = "Проверка НЕустановки Bearer token из HttpContextAccessor.")]
+        public void ShouldNotSetBearerTokenFromRequestIfBearerNotValid()
+        {
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers.Add("Authorization", "Bearetoken355");
+            var client = new HttpClient(CreateDefaultResponseHandler(HttpStatusCode.Unauthorized, "{}"));
+
+            var httpService = CreateRestHttpClient(client, httpContext);
+            Assert.Null(client.DefaultRequestHeaders.Authorization);
         }
 
         RestHttpClientMock CreateRestHttpClient(HttpClient httpClient,
