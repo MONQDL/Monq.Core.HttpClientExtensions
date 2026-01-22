@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Monq.Core.HttpClientExtensions.TestApp;
@@ -14,7 +14,7 @@ namespace Monq.Core.HttpClientExtensions.TestConsoleApp
         Task<TestModel> TestApi(string auth);
     }
 
-    public class TestService : RestHttpClientFromOptions<ServiceUriOptions>, ITestService
+    public class TestService : RestHttpClient, ITestService
     {
         ILogger<TestService> _log;
 
@@ -33,12 +33,10 @@ namespace Monq.Core.HttpClientExtensions.TestConsoleApp
             ILoggerFactory loggerFactory,
             RestHttpClientOptions configuration,
             IHttpContextAccessor httpContextAccessor) :
-            base(optionsAccessor,
-                httpClient,
+            base(httpClient,
                 loggerFactory,
                 configuration,
-                httpContextAccessor,
-                optionsAccessor.Value.TestServiceUri)
+                httpContextAccessor)
         {
             _log = loggerFactory.CreateLogger<TestService>();
         }

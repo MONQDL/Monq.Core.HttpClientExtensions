@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -12,7 +12,7 @@ namespace Monq.Core.HttpClientExtensions.TestApp
         Task<TestModel> TestApi();
     }
 
-    public class TestService : RestHttpClientFromOptions<ServiceUriOptions>, ITestService
+    public class TestService : RestHttpClient, ITestService
     {
         /// <summary>
         /// Инициализирует новый экземпляр класса <see cref="TestService" />.
@@ -29,12 +29,10 @@ namespace Monq.Core.HttpClientExtensions.TestApp
             ILoggerFactory loggerFactory,
             RestHttpClientOptions configuration,
             IHttpContextAccessor httpContextAccessor) :
-            base(optionsAccessor,
-                httpClient,
+            base(httpClient,
                 loggerFactory,
                 configuration,
-                httpContextAccessor,
-                optionsAccessor.Value.TestServiceUri)
+                httpContextAccessor)
         {
         }
 
