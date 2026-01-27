@@ -1,7 +1,6 @@
-﻿namespace Monq.Core.HttpClientExtensions.TestApp
+namespace Monq.Core.HttpClientExtensions.TestApp;
+
+public class ServiceUriOptions
 {
-    public class ServiceUriOptions
-    {
-        public string TestServiceUri { get; set; }
-    }
+    public string TestServiceUri { get; set; }
 }

@@ -145,22 +145,14 @@ Objective: create a service for executing HTTP requests via REST interface in JS
 To solve this problem, you need to create an interface, implement this interface in a class, and connect the interface and implementation in DI.
 In this case, the interface makes it easy to unit test the service that uses the interface.
 
-*ServiceUriOptions.cs*
-```csharp
-public class ServiceUriOptions
-{
-    public string ServiceUri { get; set; } = default!;
-}
-```
-
 *RemoteServiceModel.cs*
 ```csharp
 public class RemoteServiceModel
 {
     public int UserId { get; set; }
     public int Id { get; set; }
-    public string Title { get; set; } = default!;
-    public string Body { get; set; } = default!;
+    public string Title { get; set; }
+    public string Body { get; set; }
 }
 ```
 
@@ -172,34 +164,31 @@ public interface IRemoteServiceApiHttpService
 }
 ```
 
-The interface implementation must inherit from the class `RestHttpClient` or from `RestHttpClientFromOptions<TOptions>`.
-
-`RestHttpClientFromOptions<TOptions>` is a base class that provides an out-of-the-box `BaseUri` injection mechanism for `HttpClient`.
-
-`TOptions` is a class that is used to read settings from `asppsettings.json` for base addresses of services and is injected into `ServiceCollection` as `IOptions<TOptions>`
+The interface implementation must inherit from the class `RestHttpClient`.
 
 Class implementation:
 
 ```csharp
-public class DefaultRemoteServiceApiHttpService : RestHttpClientFromOptions<ServiceUriOptions>, IRemoteServiceApiHttpService
+public class DefaultRemoteServiceApiHttpService : RestHttpClient, IRemoteServiceApiHttpService
 {
-    public DefaultRemoteServiceApiHttpService(IOptions<ServiceUriOptions> optionsAccessor,
-            HttpClient httpClient,
-            ILoggerFactory loggerFactory,
-            RestHttpClientOptions configuration,
-            IHttpContextAccessor httpContextAccessor)
-        : base(optionsAccessor,
-                httpClient,
-                loggerFactory,
-                configuration,
-                httpContextAccessor,
-                optionsAccessor.Value.ServiceUri)
+
+    public DefaultRemoteServiceApiHttpService(
+        HttpClient httpClient,
+        ILoggerFactory loggerFactory,
+        RestHttpClientOptions configuration,
+        IHttpContextAccessor httpContextAccessor)
+        : base(
+            httpClient,
+            loggerFactory,
+            configuration,
+            httpContextAccessor)
     {
+        _baseUri = optionsAccessor.Value.ServiceUri;
     }
 
     public async Task<IList<RemoteServiceModel>> GetAllInstances()
     {
-        var uri = "api/instances";
+        const string uri = "api/instances";
         var result = await Get<IList<RemoteServiceModel>>(uri, TimeSpan.FromSeconds(10));
 
         return result.ResultObject;
@@ -207,7 +196,7 @@ public class DefaultRemoteServiceApiHttpService : RestHttpClientFromOptions<Serv
 }
 ```
 
-Moreover, such services are implemented via DI as HttpClient services and they must be added to DI over `AddHttpClient<>()` method.
+Such services are implemented via DI as HttpClient services and they must be added to DI over `AddHttpClient<>()` method.
 
 ```csharp
 public class Startup
@@ -216,9 +205,12 @@ public class Startup
     {
 		....
 		services.AddOptions();
-        services.Configure<ServiceUriOptions>(Configuration.GetSection("Services"));
 
-		services.AddHttpClient<IRemoteServiceApiHttpService, DefaultRemoteServiceApiHttpService>();
+		services.AddHttpClient<IRemoteServiceApiHttpService, DefaultRemoteServiceApiHttpService>(x =>
+        {
+            x.BaseAddress = new("service/uri");
+            x.Timeout = TimeSpan.FromHours(1);
+        });
 	}
 }
 ```
@@ -226,22 +218,21 @@ public class Startup
 If you need to get access to other instances from the `ServiceCollection` collection inside the http service, then classic dependency injection is implemented.
 
 ```csharp
-public class CachedRemoteServiceApiHttpService : RestHttpClientFromOptions<ServiceUriOptions>, IRemoteServiceApiHttpService
+public class CachedRemoteServiceApiHttpService : RestHttpClient, IRemoteServiceApiHttpService
 {
     readonly IMemoryCache _memoryCache;
 
-    public CachedRemoteServiceApiHttpService(IOptions<ServiceUriOptions> optionsAccessor,
-            HttpClient httpClient,
-            ILoggerFactory loggerFactory,
-            RestHttpClientOptions configuration,
-            IHttpContextAccessor httpContextAccessor 
-            IMemoryCache memoryCache)
-        : base(optionsAccessor,
-                httpClient,
-                loggerFactory,
-                configuration,
-                httpContextAccessor,
-                optionsAccessor.Value.ServiceUri)
+    public CachedRemoteServiceApiHttpService(
+        HttpClient httpClient,
+        ILoggerFactory loggerFactory,
+        RestHttpClientOptions configuration,
+        IHttpContextAccessor httpContextAccessor 
+        IMemoryCache memoryCache)
+        : base(
+            httpClient,
+            loggerFactory,
+            configuration,
+            httpContextAccessor)
     {
         _memoryCache = memoryCache;
     }
@@ -261,7 +252,7 @@ ILogger<DefaultRemoteServiceApiHttpService> log
 ```csharp
 public async Task<RestHttpResponseMessage<IList<RemoteServiceModel>> GetAllInstances()
 {
-    var uri = "api/instances";
+    const string uri = "api/instances";
     var result = await Get<IList<RemoteServiceModel>>(uri, TimeSpan.FromSeconds(10));
 
     return result;
@@ -276,7 +267,7 @@ public async Task<RestHttpResponseMessage<IList<RemoteServiceModel>> FilterInsta
     if (filter is null || filter.Prop is null)
         return RestHttpResponseMessageWrapper.Empty<IEnumerable<ConnectorMinimalViewModel>>(); // using the response wrapper.
 
-    var uri = "api/instances";
+    const string uri = "api/instances";
     var result = await Get<IList<RemoteServiceModel>>(uri, TimeSpan.FromSeconds(10));
 
     return result;
@@ -329,17 +320,10 @@ Http services inherited from this class are easy to test.
 public class DefaultRemoteServiceApiHttpServiceTests
 {
 	readonly ILogger<DefaultRemoteServiceApiHttpService> _logger;
-	readonly Mock<IOptions<ServiceUriOptions>> _serviceUriOptionsMock;
 
 	public DefaultRemoteServiceApiHttpServiceTests()
     {
         _logger = new StubLogger<DefaultRemoteServiceApiHttpService>();
-
-        _serviceUriOptionsMock = new Mock<IOptions<ServiceUriOptions>>();
-        _serviceUriOptionsMock.Setup(x => x.Value)
-            .Returns(new ServiceUriOptions() {
-                ServiceUri = "https://jsonplaceholder.typicode.com"
-            });
     }
 
     [Fact]
@@ -369,14 +353,13 @@ public class DefaultRemoteServiceApiHttpServiceTests
 		Assert.Equal(model.UserId, firstInstance.UserId);
 	}
 
-	DefaultRemoteServiceApiHttpService CreateApiService(HttpClient httpClient, HttpContext? httpContext, IOptions<ServiceOptions> optionsAccessor)
+	DefaultRemoteServiceApiHttpService CreateApiService(HttpClient httpClient, HttpContext? httpContext = null)
 	{
-		return new DefaultRemoteServiceApiHttpService(optionsAccessor ?? _optionsMoq.Object,
-                       httpClient,
-                       _loggerFactory,
-                       null,
-                       new HttpContextAccessorStub(httpContext ?? new DefaultHttpContext()),
-                       optionsAccessor.Value.ServiceUri);
+		return new DefaultRemoteServiceApiHttpService(
+            httpClient,
+            _loggerFactory,
+            null,
+            new HttpContextAccessorStub(httpContext ?? new DefaultHttpContext()));
 	}
 }
 ```
@@ -397,3 +380,20 @@ In the v5 the library was changed a lot. So you must follow migration steps.
 10. In the Startup.cs change `services.AddTransient<IService, Service>()` to `servicese.AddHttpClient<IService, Service>()` for all http services inherited from the `RestHttpClient` and `RestHttpClientFromOptions`.
 11. In the Startup.cs change `services.AddScoped<IService, Service>()` to `servicese.AddHttpClient<IService, Service>()` for all http services inherited from the `RestHttpClient` and `RestHttpClientFromOptions`.
 12. Change all unit tests to the new version described in the [Testing features](#testing-features).
+
+### Migration Guide to v7
+
+1. Replace `RestHttpClientFromOptions<T>` with `RestHttpClient` and remove unnecessary injections in implementation class constructor.
+2. Move your underlying `HttpClient` configuration to `.AddHttpClient<>()` method.
+
+```c#
+services.AddHttpClient<IService, Service>((serviceProvider, client) =>
+{
+    // Get base uri from application options.
+    var baseUri = serviceProvider.GetRequiredService<IOptions<ServiceUriOptions>>().Value.BaseUri;
+    client.BaseAddress = new(baseUri);
+
+    // Override default HTTP client timeout (100 sec).
+    client.Timeout = System.Threading.Timeout.InfiniteTimeSpan;
+})
+```

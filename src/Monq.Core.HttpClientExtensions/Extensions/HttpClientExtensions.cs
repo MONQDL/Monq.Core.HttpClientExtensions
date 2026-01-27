@@ -57,9 +57,9 @@ namespace Monq.Core.HttpClientExtensions.Extensions
 
         [RequiresUnreferencedCode(
             "Serializers is incompatible with trimming.")]
-        static async Task<HttpResponseMessage> MakeRequest(HttpClient httpClient, 
-            string requestType, 
-            string uri, 
+        static async Task<HttpResponseMessage> MakeRequest(HttpClient httpClient,
+            string requestType,
+            string uri,
             object value)
         {
             var cts = new CancellationTokenSource();

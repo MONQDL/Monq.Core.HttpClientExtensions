@@ -1,4 +1,4 @@
-﻿namespace Monq.Core.HttpClientExtensions
+namespace Monq.Core.HttpClientExtensions
 {
     internal static class AuthConstants
     {

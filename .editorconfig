@@ -295,4 +295,5 @@ dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity:sil
 dotnet_style_parentheses_in_other_operators = never_if_unnecessary:silent
 dotnet_style_require_accessibility_modifiers = omit_if_default:suggestion
 dotnet_diagnostic.CA1851.severity = none
+dotnet_diagnostic.CA1873.severity = none
 resharper_possible_multiple_enumeration_highlighting = none

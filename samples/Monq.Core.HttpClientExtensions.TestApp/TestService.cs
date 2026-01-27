@@ -1,47 +1,39 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace Monq.Core.HttpClientExtensions.TestApp
+namespace Monq.Core.HttpClientExtensions.TestApp;
+
+public interface ITestService
 {
-    public interface ITestService
+    Task<TestModel> TestApi();
+}
+
+public class TestService : RestHttpClient, ITestService
+{
+    /// <summary>
+    /// Инициализирует новый экземпляр класса <see cref="TestService" />.
+    /// </summary>
+    public TestService(
+        HttpClient httpClient,
+        ILoggerFactory loggerFactory,
+        RestHttpClientOptions configuration,
+        IHttpContextAccessor httpContextAccessor)
+        : base(
+            httpClient,
+            loggerFactory,
+            configuration,
+            httpContextAccessor)
     {
-        Task<TestModel> TestApi();
     }
 
-    public class TestService : RestHttpClient, ITestService
+    public async Task<TestModel> TestApi()
     {
-        /// <summary>
-        /// Инициализирует новый экземпляр класса <see cref="TestService" />.
-        /// </summary>
-        /// <param name="optionsAccessor">The options.</param>
-        /// <param name="loggerFactory">The logger factory.</param>
-        /// <param name="configuration">The configuration.</param>
-        /// <param name="httpContextAccessor">The HTTP context accessor.</param>
-        /// <param name="httpMessageInvoker">The HTTP message invoker.</param>
-        /// <exception cref="System.ArgumentNullException">baseUri - Не указан базовый Uri сервиса.</exception>
-        public TestService(
-            IOptions<ServiceUriOptions> optionsAccessor,
-            HttpClient httpClient,
-            ILoggerFactory loggerFactory,
-            RestHttpClientOptions configuration,
-            IHttpContextAccessor httpContextAccessor) :
-            base(httpClient,
-                loggerFactory,
-                configuration,
-                httpContextAccessor)
-        {
-        }
+        var result = await Get<TestModel>("posts/1", TimeSpan.FromSeconds(10),
+            serializer: RestHttpClientSystemTextJsonSerializer.Default);
 
-        public async Task<TestModel> TestApi()
-        {
-            var result = await Get<TestModel>("posts/1", TimeSpan.FromSeconds(10), 
-                serializer: RestHttpClientSystemTextJsonSerializer.Default);
-
-            return result.ResultObject!;
-        }
+        return result.ResultObject!;
     }
 }

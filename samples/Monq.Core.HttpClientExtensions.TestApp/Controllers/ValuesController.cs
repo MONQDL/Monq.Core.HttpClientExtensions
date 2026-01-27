@@ -1,24 +1,23 @@
-﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
-namespace Monq.Core.HttpClientExtensions.TestApp.Controllers
+namespace Monq.Core.HttpClientExtensions.TestApp.Controllers;
+
+[Route("api/test")]
+public class TestController : Controller
 {
-    [Route("api/test")]
-    public class TestController : Controller
+    readonly ITestService _service;
+
+    public TestController(ITestService service)
     {
-        readonly ITestService _service;
+        _service = service;
+    }
 
-        public TestController(ITestService service)
-        {
-            _service = service;
-        }
+    [HttpGet]
+    public async Task<IActionResult> Get()
+    {
+        var result = await _service.TestApi();
 
-        [HttpGet]
-        public async Task<IActionResult> Get()
-        {
-            var result = await _service.TestApi();
-
-            return Ok(result);
-        }
+        return Ok(result);
     }
 }
