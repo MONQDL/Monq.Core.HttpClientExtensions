@@ -1,4 +1,4 @@
-﻿namespace Monq.Core.HttpClientExtensions
+namespace Monq.Core.HttpClientExtensions
 {
     /// <summary>
     /// Basic http client configuration.
@@ -8,7 +8,7 @@
         /// <summary>
         /// Configuration of handling http-headers.
         /// </summary>
-        public RestHttpClientHeaderOptions RestHttpClientHeaderOptions { get; protected set; } = 
+        public RestHttpClientHeaderOptions RestHttpClientHeaderOptions { get; protected set; } =
             new RestHttpClientHeaderOptions();
 
         /// <summary>

@@ -1,55 +1,50 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Monq.Core.HttpClientExtensions.TestApp;
+using Monq.Core.HttpClientExtensions.TestConsoleApp;
 using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Monq.Core.HttpClientExtensions.TestConsoleApp
-{
-    class Program
+Console.OutputEncoding = Encoding.UTF8;
+
+var httpContext = new DefaultHttpContext();
+httpContext.Request.Headers.Append("X-C", "-1");
+
+using var host = Host.CreateDefaultBuilder(args)
+    .ConfigBasicHttpService()
+    .ConfigureServices((builder, services) =>
     {
-        static readonly DefaultHttpContext _httpContext = new DefaultHttpContext();
-        
-        static async Task Main(string[] args)
+        services.AddHttpContextAccessor();
+        services.Configure<ServiceUriOptions>(x => x.TestServiceUri = "https://jsonplaceholder.typicode.com");
+
+        services.AddSingleton<IHttpContextAccessor>(_ => new HttpContextAccessor { HttpContext = httpContext });
+
+        services.AddHttpClient<ITestService, TestService>((serviceProvider, client) =>
         {
-            Console.OutputEncoding = Encoding.UTF8;
+            var baseUri = serviceProvider.GetRequiredService<IOptions<ServiceUriOptions>>().Value.TestServiceUri;
+            client.BaseAddress = new(baseUri);
+        });
+    })
+    .ConfigureLogging((builder, log) => { log.SetMinimumLevel(LogLevel.Trace); log.AddConsole(); })
+    .Build();
 
-            _httpContext.Request.Headers.Add("X-C", "-1");
+var tasks = Enumerable.Range(1, 5).Select(i =>
+{
+    var scopeFactory = host.Services.GetRequiredService<IServiceScopeFactory>();
+    return ExecuteService(scopeFactory, i.ToString());
+});
 
-            var hostBuilder = new HostBuilder()
-                .ConfigBasicHttpService()
-                .ConfigureServices((host, services) =>
-                {
-                    services.AddHttpContextAccessor();
-                    services.Configure<ServiceUriOptions>(x => x.TestServiceUri = "https://jsonplaceholder.typicode.com");
+await Task.WhenAll(tasks);
 
-                    services.AddHttpClient<ITestService, TestService>();
-                })
-                .ConfigureLogging((host, log) => { log.SetMinimumLevel(LogLevel.Trace); log.AddConsole(); })
-                .Build();
-
-            var httpContextAccessor = hostBuilder.Services.GetRequiredService<IHttpContextAccessor>();
-            httpContextAccessor.HttpContext = _httpContext;
-
-            var tasks = Enumerable.Range(1, 5).Select(i =>
-            {
-                var scopeFactory = hostBuilder.Services.GetRequiredService<IServiceScopeFactory>();
-                return ExecuteService(scopeFactory, i.ToString());
-            });
-
-            await Task.WhenAll(tasks);
-        }
-
-        static async Task ExecuteService(IServiceScopeFactory scopeFactory, string auth)
-        {
-            using var scope = scopeFactory.CreateScope();
-            var service = scope.ServiceProvider.GetRequiredService<ITestService>();
-            await service.TestApi(auth);
-            await service.TestApi(auth);
-        }
-    }
+static async Task ExecuteService(IServiceScopeFactory scopeFactory, string auth)
+{
+    using var scope = scopeFactory.CreateScope();
+    var service = scope.ServiceProvider.GetRequiredService<ITestService>();
+    await service.TestApi(auth);
+    await service.TestApi(auth);
 }

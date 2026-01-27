@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.DependencyInjection
                             Policy = new DiscoveryPolicy { RequireHttps = requireHttps }
                         };
                         var disco = await client.GetDiscoveryDocumentAsync(discoveryDocumentRequest);
-                        if (disco.IsError) 
+                        if (disco.IsError)
                             throw new DiscoveryEndpointException(disco.Error, disco.Exception);
 
                         var request = new ClientCredentialsTokenRequest
