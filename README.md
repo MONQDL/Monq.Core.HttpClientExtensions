@@ -79,11 +79,45 @@ hostBuilder.ConfigureStaticAuthentication();
 ```
 In this case you must set configuration from appsettings.json. The library searches for the *"Authentication"* token.
 
+The authentication request uses an isolated named `HttpClient` with a default timeout
+of 10 seconds. It does not inherit service discovery handlers, certificates, proxy
+settings, or other handlers from a downstream REST client. Configure the isolated
+client explicitly when custom transport settings are required:
+
+```csharp
+hostBuilder.ConfigureStaticAuthentication(clientBuilder =>
+{
+    clientBuilder.ConfigureHttpClient(client =>
+        client.Timeout = TimeSpan.FromSeconds(30));
+
+    clientBuilder.ConfigurePrimaryHttpMessageHandler(() =>
+    {
+        var handler = new HttpClientHandler
+        {
+            Proxy = authenticationProxy,
+            UseProxy = authenticationProxy is not null
+        };
+        handler.ClientCertificates.Add(authenticationClientCertificate);
+        return handler;
+    });
+});
+```
+
+The endpoint factory receives the final `HostBuilderContext`, so an application-level
+library can resolve the address from the environment or another address strategy.
+
+```csharp
+hostBuilder.ConfigureStaticAuthentication(
+    context => new Uri("http://identity-service.namespace.svc.cluster.local:80"),
+    clientBuilder => clientBuilder.ConfigureHttpClient(client =>
+        client.Timeout = TimeSpan.FromSeconds(30)));
+```
+
 *appsettings.json*
 ```json
 {
   "Authentication": {
-    "AuthenticationEndpoint": "https://smon.monq.ru",
+    "AuthenticationEndpoint": "https://identity.example.com",
     "Client": {
         "Login": "idp-client",
         "Password": "idp-client-secret"
