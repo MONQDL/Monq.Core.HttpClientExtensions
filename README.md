@@ -77,7 +77,20 @@ In normal mode, the library aims to automatically forward the `Bearer token` fro
 ```csharp
 hostBuilder.ConfigureStaticAuthentication();
 ```
-In this case you must set configuration from appsettings.json. The library searches for the *"Authentication"* token.
+
+This resolves the default authentication service (`pl-identity-service`, see
+`HostBuilderExtensions.DefaultAuthenticationApplicationName`) with the configured HTTP
+microservice address resolver. Pass an explicit application name and optional port to
+authenticate against another service:
+
+```csharp
+hostBuilder.ConfigureStaticAuthentication(
+    "identity-service",
+    port: 80);
+```
+
+An `IMicroserviceAddressResolver` passed to this overload overrides the HTTP resolver
+for this authentication service only.
 
 The authentication request uses an isolated named `HttpClient` with a default timeout
 of 10 seconds. It does not inherit service discovery handlers, certificates, proxy
@@ -103,21 +116,23 @@ hostBuilder.ConfigureStaticAuthentication(clientBuilder =>
 });
 ```
 
-The endpoint factory receives the final `HostBuilderContext`, so an application-level
-library can resolve the address from the environment or another address strategy.
+An application can bypass address resolution and set the absolute authentication
+endpoint explicitly:
 
 ```csharp
 hostBuilder.ConfigureStaticAuthentication(
-    context => new Uri("http://identity-service.namespace.svc.cluster.local:80"),
+    new Uri("https://identity.example.com"),
     clientBuilder => clientBuilder.ConfigureHttpClient(client =>
         client.Timeout = TimeSpan.FromSeconds(30)));
 ```
+
+Client credentials are read from the *"Authentication"* configuration section
+(for example, from Consul):
 
 *appsettings.json*
 ```json
 {
   "Authentication": {
-    "AuthenticationEndpoint": "https://identity.example.com",
     "Client": {
         "Login": "idp-client",
         "Password": "idp-client-secret"
@@ -126,6 +141,10 @@ hostBuilder.ConfigureStaticAuthentication(
   }
 }
 ```
+
+> [!NOTE]
+> If you are upgrading from a version before 8.0.0, see
+> [v8-MIGRATION.md](v8-MIGRATION.md).
 
 An example of self-implementation of the authentication method in idp using `IdentityModel.Client`.
 
