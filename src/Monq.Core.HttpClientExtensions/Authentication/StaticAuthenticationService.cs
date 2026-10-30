@@ -78,9 +78,24 @@ namespace Monq.Core.HttpClientExtensions
                 Address = _authenticationEndpoint.Value.AbsoluteUri,
                 Policy = new DiscoveryPolicy { RequireHttps = requireHttps }
             };
-            var disco = await client.GetDiscoveryDocumentAsync(discoveryDocumentRequest);
+            DiscoveryDocumentResponse disco;
+            try
+            {
+                disco = await client.GetDiscoveryDocumentAsync(discoveryDocumentRequest);
+            }
+            catch (Exception ex)
+            {
+                throw new DiscoveryEndpointException(
+                    $"Could not reach the authentication endpoint '{_authenticationEndpoint.Value}'. "
+                    + "If this host is not running inside Kubernetes, configure the endpoint explicitly: "
+                    + "ConfigureStaticAuthentication(new Uri(\"...\")) or a fixed microservice address resolver.",
+                    ex);
+            }
             if (disco.IsError)
-                throw new DiscoveryEndpointException(disco.Error, disco.Exception);
+                throw new DiscoveryEndpointException(
+                    $"The authentication endpoint '{_authenticationEndpoint.Value}' returned a discovery "
+                    + $"document error: {disco.Error}",
+                    disco.Exception);
 
             var request = new ClientCredentialsTokenRequest
             {

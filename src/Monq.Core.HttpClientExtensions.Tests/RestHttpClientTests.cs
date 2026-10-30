@@ -9,10 +9,12 @@ using Moq.Protected;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -418,6 +420,58 @@ public class RestHttpClientTests
         Assert.Null(client.DefaultRequestHeaders.Authorization);
     }
 
+    [Fact(DisplayName = "Статический токен аутентификации устанавливается в каждый запрос при параллельной обработке.")]
+    public async Task ShouldSetAuthorizationPerRequestInParallel()
+    {
+        var modelJson = JsonConvert.SerializeObject(new Service[]
+        {
+            new() { Id = 1, Name = "Service1" },
+            new() { Id = 2, Name = "Service2" }
+        });
+
+        const string uri = "http://unittest/api/services";
+
+        var authorizations = new ConcurrentBag<AuthenticationHeaderValue?>();
+        var client = new HttpClient(new AuthorizationRecordingHandler(HttpStatusCode.OK, modelJson, authorizations));
+        var restHttpClient = CreateRestHttpClient(client);
+
+        RestHttpClient.AuthorizationRequest += _ => Task.FromResult(CreateTokenResponse("system-token"));
+
+        const int totalRequests = 100;
+        var results = Enumerable.Range(0, totalRequests).AsParallel().WithDegreeOfParallelism(10)
+            .Select(_ => restHttpClient.Get<IEnumerable<Service>>(uri, TimeSpan.FromSeconds(10)).GetAwaiter().GetResult())
+            .AsSequential()
+            .ToList();
+
+        Assert.Equal(totalRequests, authorizations.Count);
+        Assert.All(authorizations, authorization => Assert.Equal("system-token", authorization?.Parameter));
+        Assert.Null(client.DefaultRequestHeaders.Authorization);
+        Assert.Equal(totalRequests * 2, results.Where(x => x.ResultObject is not null).SelectMany(x => x.ResultObject).Count());
+    }
+
+    [Fact(DisplayName = "Обновление токена по 401 не заменяет пользовательский токен в общем HttpClient.")]
+    public async Task ShouldNotReplaceDefaultAuthorizationOnRefresh()
+    {
+        var modelJson = JsonConvert.SerializeObject(Array.Empty<Service>());
+
+        const string uri = "http://unittest/api/services";
+
+        var authorizations = new ConcurrentBag<AuthenticationHeaderValue?>();
+        var client = new HttpClient(new AuthorizationRecordingHandler(HttpStatusCode.Unauthorized, modelJson, authorizations));
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "user-token");
+        var restHttpClient = CreateRestHttpClient(client);
+
+        RestHttpClient.AuthorizationRequest += _ => Task.FromResult(CreateTokenResponse("system-token"));
+
+        await Assert.ThrowsAsync<ResponseException>(
+            async () => await restHttpClient.Get<IEnumerable<Service>>(uri, TimeSpan.FromSeconds(10)));
+
+        Assert.Equal(2, authorizations.Count);
+        Assert.Contains("user-token", authorizations.Select(authorization => authorization?.Parameter));
+        Assert.Contains("system-token", authorizations.Select(authorization => authorization?.Parameter));
+        Assert.Equal("user-token", client.DefaultRequestHeaders.Authorization?.Parameter);
+    }
+
     RestHttpClientMock CreateRestHttpClient(
         HttpClient httpClient,
         HttpContext? httpContext = null,
@@ -441,5 +495,29 @@ public class RestHttpClientTests
             });
 
         return mockHttpMessageHandler.Object;
+    }
+
+    static TokenResponse CreateTokenResponse(string accessToken)
+    {
+        var tokenResponse = new TokenResponse();
+        var json = System.Text.Json.JsonDocument.Parse(
+            $"{{ \"access_token\": \"{accessToken}\", \"token_type\": \"Bearer\", \"expires_in\": 3600 }}");
+        typeof(TokenResponse).GetProperty(nameof(TokenResponse.Json))?.SetValue(tokenResponse, json.RootElement);
+        return tokenResponse;
+    }
+
+    sealed class AuthorizationRecordingHandler(
+        HttpStatusCode statusCode,
+        string json,
+        ConcurrentBag<AuthenticationHeaderValue?> authorizations) : DelegatingHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            authorizations.Add(request.Headers.Authorization);
+            return Task.FromResult(new HttpResponseMessage(statusCode)
+            {
+                Content = new StringContent(json)
+            });
+        }
     }
 }
