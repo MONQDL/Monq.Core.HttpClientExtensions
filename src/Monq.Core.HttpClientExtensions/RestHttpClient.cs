@@ -10,6 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -523,8 +524,6 @@ namespace Monq.Core.HttpClientExtensions
             var serializedRequestValue = jsonSerializer.Serialize(value);
             try
             {
-                await SetToken();
-
                 var method = new HttpMethod(requestType);
                 response = await DoHttpRequest(uri,
                                      headers,
@@ -535,13 +534,13 @@ namespace Monq.Core.HttpClientExtensions
                 // Refresh token on 401 response.
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
-                    await SetToken(true);
                     // You cannot send the same request 2 times.
                     response = await DoHttpRequest(uri,
                                          headers,
                                          method,
                                          cts,
-                                         new StringContent(serializedRequestValue, Encoding.UTF8, "application/json"));
+                                         new StringContent(serializedRequestValue, Encoding.UTF8, "application/json"),
+                                         refreshAuthorization: true);
                 }
 
                 var content = response.Content;
@@ -602,17 +601,14 @@ namespace Monq.Core.HttpClientExtensions
             string result = string.Empty;
             try
             {
-                await SetToken();
-
                 var method = new HttpMethod(requestType);
                 response = await DoHttpRequest(uri, headers, method, cts);
 
                 // Refresh token on 401 response.
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
-                    await SetToken(true);
                     // You cannot send the same request 2 times.
-                    response = await DoHttpRequest(uri, headers, method, cts);
+                    response = await DoHttpRequest(uri, headers, method, cts, refreshAuthorization: true);
                 }
 
                 var content = response.Content;
@@ -642,12 +638,14 @@ namespace Monq.Core.HttpClientExtensions
             IHeaderDictionary? headers,
             HttpMethod method,
             CancellationToken cts,
-            HttpContent? content = default)
+            HttpContent? content = default,
+            bool refreshAuthorization = false)
         {
             var request = new HttpRequestMessage(method, uri);
             if (content is not null)
                 request.Content = content;
             SetHttpRequestHeaders(request, headers);
+            await SetRequestAuthorization(request, refreshAuthorization);
 
             var response = await _httpClient.SendAsync(request, cts);
             response.RequestMessage = request;
@@ -659,7 +657,14 @@ namespace Monq.Core.HttpClientExtensions
             if (headers is not null && headers.Any())
                 foreach (var header in headers)
                 {
-                    request.Headers.Add(header.Key, header.Value.ToArray());
+                    var values = header.Value.ToArray();
+                    if (values.Any(v => v is null))
+                        throw new ArgumentException(
+                            $"Request header '{header.Key}' contains a null or empty value. "
+                            + "A null header value causes a NullReferenceException later inside System.Net.Http "
+                            + "while writing the request to the socket.",
+                            nameof(headers));
+                    request.Headers.Add(header.Key, values);
                 }
             // Forward the specified headers in the options to the downstream services.
             PassThroughForwardedHeaders(request);
@@ -681,15 +686,17 @@ namespace Monq.Core.HttpClientExtensions
             }
         }
 
-        async Task SetToken(bool invokeHandler = false)
+        async Task SetRequestAuthorization(HttpRequestMessage request, bool refreshAuthorization)
         {
-            // If token was set by HttpAccessHandler use it.
-            if (_httpClient.DefaultRequestHeaders?.Authorization?.Parameter is not null && !invokeHandler)
+            // If the token was set by HttpAccessHandler use it.
+            if (!refreshAuthorization && _httpClient.DefaultRequestHeaders?.Authorization?.Parameter is not null)
                 return;
 
-            var token = await GetAccessToken(invokeHandler);
-            if (token != null)
-                SetBearerToken(token.AccessToken);
+            var token = await GetAccessToken(refreshAuthorization);
+            // Set the token on the request message, not on the shared HttpClient
+            // DefaultRequestHeaders, to avoid a race with concurrently serialized requests.
+            if (token is not null && !string.IsNullOrEmpty(token.AccessToken))
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
         }
     }
 }

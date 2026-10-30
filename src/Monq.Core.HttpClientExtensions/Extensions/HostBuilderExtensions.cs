@@ -1,10 +1,11 @@
-using IdentityModel.Client;
+﻿using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Monq.Core.HttpClientExtensions;
-using Monq.Core.HttpClientExtensions.Exceptions;
+using Monq.Core.MicroserviceAddressing.Addressing;
+using Monq.Core.MicroserviceAddressing.DependencyInjection;
+using Monq.Core.MicroserviceAddressing.Hosting;
 using System;
-using static Monq.Core.HttpClientExtensions.AuthConstants;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -13,50 +14,128 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     public static class HostBuilderExtensions
     {
-        const string WriteScope = "write";
 
         /// <summary>
-        /// Configure a static authentication method that will be executed on the first HttpClient request.
+        /// The authentication service application name used by the parameterless
+        /// <see cref="ConfigureStaticAuthentication(IHostBuilder)" /> overloads.
+        /// </summary>
+        public const string DefaultAuthenticationApplicationName = "pl-identity-service";
+
+        /// <summary>
+        /// Configure a static authentication method for the default authentication service
+        /// (<see cref="DefaultAuthenticationApplicationName" />). The endpoint is resolved with the
+        /// configured HTTP microservice address resolver. Repeated calls do not register
+        /// additional authentication hosted services.
         /// </summary>
         /// <param name="hostBuilder">The host builder.</param>
         public static IHostBuilder ConfigureStaticAuthentication(this IHostBuilder hostBuilder) =>
-            hostBuilder
-                .ConfigureServices((builderContext, config) =>
-                {
-                    var authEndpoint = $"{Authentication.AuthenticationSection}:{Authentication.AuthenticationEndpoint}";
-                    if (string.IsNullOrEmpty(builderContext.Configuration[authEndpoint]))
-                        throw new MissingConfigurationException("No configuration found { \"Authentication \": {...}} in loaded configuration providers.");
+            ConfigureStaticAuthentication(hostBuilder, DefaultAuthenticationApplicationName);
 
-                    var configuration = builderContext.Configuration;
-                    RestHttpClient.AuthorizationRequest += async (client) =>
-                    {
-                        // TODO: Take out the hardcode in options and Default configuration.
-                        var authConfig = configuration.GetSection(Authentication.AuthenticationSection);
+        /// <summary>
+        /// Configure a static authentication method for the default authentication service
+        /// (<see cref="DefaultAuthenticationApplicationName" />) with custom settings for the
+        /// isolated authentication HTTP client. The endpoint is resolved with the configured
+        /// HTTP microservice address resolver.
+        /// </summary>
+        /// <param name="hostBuilder">The host builder.</param>
+        /// <param name="configureAuthenticationClient">
+        /// Configuration for the isolated authentication HTTP client.
+        /// </param>
+        public static IHostBuilder ConfigureStaticAuthentication(
+            this IHostBuilder hostBuilder,
+            Action<IHttpClientBuilder> configureAuthenticationClient)
+        {
+            ArgumentNullException.ThrowIfNull(configureAuthenticationClient);
+            return ConfigureStaticAuthentication(
+                hostBuilder,
+                DefaultAuthenticationApplicationName,
+                configureAuthenticationClient);
+        }
 
-                        if (!bool.TryParse(authConfig[Authentication.RequireHttpsMetadata], out var requireHttps))
-                            requireHttps = false;
+        /// <summary>
+        /// Configure a static authentication method using an explicit absolute authentication endpoint.
+        /// </summary>
+        /// <param name="hostBuilder">The host builder.</param>
+        /// <param name="authenticationEndpoint">The absolute authentication endpoint.</param>
+        /// <param name="configureAuthenticationClient">
+        /// Optional configuration for the isolated authentication HTTP client.
+        /// </param>
+        public static IHostBuilder ConfigureStaticAuthentication(
+            this IHostBuilder hostBuilder,
+            Uri authenticationEndpoint,
+            Action<IHttpClientBuilder>? configureAuthenticationClient = null)
+        {
+            ArgumentNullException.ThrowIfNull(authenticationEndpoint);
+            if (!authenticationEndpoint.IsAbsoluteUri)
+                throw new ArgumentException(
+                    "The authentication endpoint must be an absolute URI.",
+                    nameof(authenticationEndpoint));
 
-                        var discoveryDocumentRequest = new DiscoveryDocumentRequest
-                        {
-                            Address = authConfig[Authentication.AuthenticationEndpoint],
-                            Policy = new DiscoveryPolicy { RequireHttps = requireHttps }
-                        };
-                        var disco = await client.GetDiscoveryDocumentAsync(discoveryDocumentRequest);
-                        if (disco.IsError)
-                            throw new DiscoveryEndpointException(disco.Error, disco.Exception);
+            return ConfigureStaticAuthentication(hostBuilder, _ => authenticationEndpoint,
+                configureAuthenticationClient);
+        }
 
-                        var request = new ClientCredentialsTokenRequest
-                        {
-                            Address = disco.TokenEndpoint,
-                            ClientId = authConfig[Authentication.ClientName],
-                            ClientSecret = authConfig[Authentication.ClientSecret],
-                            Scope = WriteScope
-                        };
+        /// <summary>
+        /// Configure a static authentication method using the authentication service address
+        /// returned by the configured HTTP microservice address resolver.
+        /// </summary>
+        /// <param name="hostBuilder">The host builder.</param>
+        /// <param name="applicationName">The authentication service application name.</param>
+        /// <param name="configureAuthenticationClient">
+        /// Optional configuration for the isolated authentication HTTP client.
+        /// </param>
+        /// <param name="port">Optional service port override.</param>
+        /// <param name="addressResolver">Optional resolver override for this authentication service.</param>
+        public static IHostBuilder ConfigureStaticAuthentication(
+            this IHostBuilder hostBuilder,
+            string applicationName,
+            Action<IHttpClientBuilder>? configureAuthenticationClient = null,
+            int? port = null,
+            IMicroserviceAddressResolver? addressResolver = null)
+        {
+            ArgumentNullException.ThrowIfNull(hostBuilder);
+            if (string.IsNullOrWhiteSpace(applicationName))
+                throw new ArgumentException("The application name cannot be empty.", nameof(applicationName));
 
-                        var response = await client.RequestClientCredentialsTokenAsync(request);
-                        return response;
-                    };
-                });
+            hostBuilder.ConfigureServices(services => services.AddMicroserviceAddressing());
+
+            return ConfigureStaticAuthentication(
+                hostBuilder,
+                context => hostBuilder.ResolveMicroserviceAddress(
+                    context,
+                    applicationName,
+                    MicroserviceProtocol.Http,
+                    port,
+                    addressResolver).Address,
+                configureAuthenticationClient);
+        }
+
+        static IHostBuilder ConfigureStaticAuthentication(
+            this IHostBuilder hostBuilder,
+            Func<HostBuilderContext, Uri> authenticationEndpointFactory,
+            Action<IHttpClientBuilder>? configureAuthenticationClient = null)
+        {
+            ArgumentNullException.ThrowIfNull(hostBuilder);
+            ArgumentNullException.ThrowIfNull(authenticationEndpointFactory);
+
+            return hostBuilder.ConfigureServices((builderContext, services) =>
+            {
+                var authenticationEndpoint = authenticationEndpointFactory(builderContext);
+                ArgumentNullException.ThrowIfNull(authenticationEndpoint);
+                if (!authenticationEndpoint.IsAbsoluteUri)
+                    throw new ArgumentException(
+                        "The authentication endpoint must be an absolute URI.",
+                        nameof(authenticationEndpointFactory));
+
+                var clientBuilder = services.AddHttpClient(
+                    StaticAuthenticationService.HttpClientName,
+                    client => client.Timeout = StaticAuthenticationService.DefaultTimeout);
+                configureAuthenticationClient?.Invoke(clientBuilder);
+                services.TryAddSingleton(new StaticAuthenticationEndpoint(authenticationEndpoint));
+                services.TryAddEnumerable(
+                    ServiceDescriptor.Singleton<IHostedService, StaticAuthenticationService>());
+            });
+        }
 
         /// <summary>
         /// Apply http request processing configuration for <see cref = "RestHttpClient" />.
