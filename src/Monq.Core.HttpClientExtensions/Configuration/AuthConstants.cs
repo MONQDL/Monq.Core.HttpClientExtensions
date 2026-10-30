@@ -9,7 +9,6 @@ namespace Monq.Core.HttpClientExtensions
             public const string ClientSecret = "Client:Password";
 
             public const string RequireHttpsMetadata = "RequireHttpsMetadata";
-            public const string EnableCaching = "EnableCaching";
         }
     }
 }

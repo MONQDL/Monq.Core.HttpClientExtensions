@@ -87,6 +87,16 @@ hostBuilder.ConfigureStaticAuthentication(
 The `Authentication` section is still required for client credentials
 (`Client:Login`, `Client:Password`) and optional `RequireHttpsMetadata`.
 
+The legacy `Authentication:EnableCaching` key was never read by this library
+and does nothing here. Token caching for static authentication is not a
+library option: the system token is reused until its server-provided
+`expires_in` elapses, with a forced refresh on a `401` response. There is no
+introspection in this library — incoming-token introspection and its cache
+duration are configured in `Monq.Core.BasicDotNetMicroservice` via
+`Authentication:CacheDurationSeconds` (default 300; the Duende OAuth2
+introspection handler always caches, so the old `EnableCaching` switch is not
+supported anywhere anymore).
+
 Only the `Authentication:AuthenticationEndpoint` key becomes dead
 configuration for services on 8.0.0. Remove it from Consul and application
 configuration after **all** consumers are migrated. Note that the deprecated
