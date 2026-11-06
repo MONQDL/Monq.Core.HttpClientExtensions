@@ -3,8 +3,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Monq.Core.HttpClientExtensions;
 using Monq.Core.MicroserviceAddressing.Addressing;
-using Monq.Core.MicroserviceAddressing.DependencyInjection;
-using Monq.Core.MicroserviceAddressing.Hosting;
 using System;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -101,37 +99,44 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return ConfigureStaticAuthentication(
                 hostBuilder,
-                context => hostBuilder.ResolveMicroserviceAddress(
-                    context,
-                    applicationName,
-                    MicroserviceProtocol.Http,
-                    port,
-                    addressResolver).Address,
+                provider => provider
+                    .GetRequiredService<IMicroserviceAddressProvider>()
+                    .Resolve(
+                        applicationName,
+                        MicroserviceProtocol.Http,
+                        port,
+                        addressResolver)
+                    .Address,
                 configureAuthenticationClient);
         }
 
         static IHostBuilder ConfigureStaticAuthentication(
             this IHostBuilder hostBuilder,
-            Func<HostBuilderContext, Uri> authenticationEndpointFactory,
+            Func<IServiceProvider, Uri> authenticationEndpointFactory,
             Action<IHttpClientBuilder>? configureAuthenticationClient = null)
         {
             ArgumentNullException.ThrowIfNull(hostBuilder);
             ArgumentNullException.ThrowIfNull(authenticationEndpointFactory);
 
-            return hostBuilder.ConfigureServices((builderContext, services) =>
+            return hostBuilder.ConfigureServices((_, services) =>
             {
-                var authenticationEndpoint = authenticationEndpointFactory(builderContext);
-                ArgumentNullException.ThrowIfNull(authenticationEndpoint);
-                if (!authenticationEndpoint.IsAbsoluteUri)
-                    throw new ArgumentException(
-                        "The authentication endpoint must be an absolute URI.",
-                        nameof(authenticationEndpointFactory));
-
                 var clientBuilder = services.AddHttpClient(
                     StaticAuthenticationService.HttpClientName,
                     client => client.Timeout = StaticAuthenticationService.DefaultTimeout);
                 configureAuthenticationClient?.Invoke(clientBuilder);
-                services.TryAddSingleton(new StaticAuthenticationEndpoint(authenticationEndpoint));
+
+                services.TryAddSingleton(provider =>
+                {
+                    var authenticationEndpoint = authenticationEndpointFactory(provider);
+                    ArgumentNullException.ThrowIfNull(authenticationEndpoint);
+                    if (!authenticationEndpoint.IsAbsoluteUri)
+                        throw new ArgumentException(
+                            "The authentication endpoint must be an absolute URI.",
+                            nameof(authenticationEndpointFactory));
+
+                    return new StaticAuthenticationEndpoint(authenticationEndpoint);
+                });
+
                 services.TryAddEnumerable(
                     ServiceDescriptor.Singleton<IHostedService, StaticAuthenticationService>());
             });

@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Monq.Core.MicroserviceAddressing.Addressing;
-using Monq.Core.MicroserviceAddressing.Hosting;
 using System;
 using System.Linq;
 using System.Net.Http;
@@ -54,7 +53,7 @@ public class HostBuilderExtensionsTests
 
         var authenticationServices = host.Services
             .GetServices<IHostedService>()
-            .Where(service => service.GetType().Name == "StaticAuthenticationService");
+            .OfType<StaticAuthenticationService>();
 
         Assert.Single(authenticationServices);
     }
@@ -65,12 +64,16 @@ public class HostBuilderExtensionsTests
         var resolver = new CapturingAddressResolver();
 
         using var host = new HostBuilder()
-            .UseHttpMicroserviceAddressResolver(resolver)
+            .ConfigureServices(services => services.UseHttpMicroserviceAddressResolver(resolver))
             .ConfigureStaticAuthentication("identity-service", port: 8080)
             .Build();
 
-        Assert.NotNull(resolver.Context);
-        Assert.Equal("identity-service", resolver.Context.TargetApplicationName);
+        Assert.Null(resolver.Context);
+
+        var endpoint = host.Services.GetRequiredService<StaticAuthenticationEndpoint>();
+
+        Assert.Equal(new Uri("https://identity.example.com"), endpoint.Value);
+        Assert.Equal("identity-service", resolver.Context!.TargetApplicationName);
         Assert.Equal(MicroserviceProtocol.Http, resolver.Context.Protocol);
         Assert.Equal(8080, resolver.Context.PortOverride);
     }
@@ -81,14 +84,16 @@ public class HostBuilderExtensionsTests
         var resolver = new CapturingAddressResolver();
 
         using var host = new HostBuilder()
-            .UseHttpMicroserviceAddressResolver(resolver)
+            .ConfigureServices(services => services.UseHttpMicroserviceAddressResolver(resolver))
             .ConfigureStaticAuthentication()
             .Build();
 
-        Assert.NotNull(resolver.Context);
+        var endpoint = host.Services.GetRequiredService<StaticAuthenticationEndpoint>();
+
+        Assert.Equal(new Uri("https://identity.example.com"), endpoint.Value);
         Assert.Equal(
             HostBuilderExtensions.DefaultAuthenticationApplicationName,
-            resolver.Context.TargetApplicationName);
+            resolver.Context!.TargetApplicationName);
     }
 
     [Fact(DisplayName = "Apply client configuration with the default authentication application name.")]
@@ -98,15 +103,16 @@ public class HostBuilderExtensionsTests
         var expectedTimeout = TimeSpan.FromSeconds(23);
 
         using var host = new HostBuilder()
-            .UseHttpMicroserviceAddressResolver(resolver)
+            .ConfigureServices(services => services.UseHttpMicroserviceAddressResolver(resolver))
             .ConfigureStaticAuthentication((Action<IHttpClientBuilder>)(clientBuilder =>
                 clientBuilder.ConfigureHttpClient(client => client.Timeout = expectedTimeout)))
             .Build();
 
-        Assert.NotNull(resolver.Context);
+        host.Services.GetRequiredService<StaticAuthenticationEndpoint>();
+
         Assert.Equal(
             HostBuilderExtensions.DefaultAuthenticationApplicationName,
-            resolver.Context.TargetApplicationName);
+            resolver.Context!.TargetApplicationName);
 
         var factory = host.Services.GetRequiredService<IHttpClientFactory>();
         using var client = factory.CreateClient(AuthenticationHttpClientName);

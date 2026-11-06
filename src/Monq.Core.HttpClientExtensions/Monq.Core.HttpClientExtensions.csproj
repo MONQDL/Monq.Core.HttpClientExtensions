@@ -30,7 +30,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Monq.Core.MicroserviceAddressing" Version="0.1.0" />
+    <PackageReference Include="Monq.Core.MicroserviceAddressing" Version="0.2.0-rev-42252065267" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Monq.Core.HttpClientExtensions.Tests" />
   </ItemGroup>
 
   <ItemGroup>
