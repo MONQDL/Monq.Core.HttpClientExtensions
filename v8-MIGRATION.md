@@ -102,11 +102,8 @@ configuration for services on 8.0.0. Remove it from Consul and application
 configuration after **all** consumers are migrated. Note that the deprecated
 `ConfigureMonqAuthentication(IServiceCollection, IConfiguration)` overload in
 `Monq.Core.BasicDotNetMicroservice` still reads this key until every consumer
-is migrated to the application-name overload (see
-`service-discovery-MIGRATION.md` in that repository).
+is migrated to the application-name overload.
 
 ## Related documents
 
-- [README.md](README.md) — current static authentication API;
-- `service-discovery-MIGRATION.md` in `Monq.Core.BasicDotNetMicroservice` —
-  client addressing migration and the legacy introspection overload.
+- [README.md](README.md) — current static authentication API.
