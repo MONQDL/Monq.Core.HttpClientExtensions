@@ -8,12 +8,13 @@ application name (microservice addressing).
 
 - Target frameworks `net6.0` and `net7.0` were removed. Supported: `net8.0`,
   `net9.0`, `net10.0`.
-- The configuration-based overloads `ConfigureStaticAuthentication()` and
-  `ConfigureStaticAuthentication(Action<IHttpClientBuilder>)` no longer read
-  the `Authentication:AuthenticationEndpoint` configuration key. Their
-  signatures were kept, and they now resolve the default authentication
-  service (`HostBuilderExtensions.DefaultAuthenticationApplicationName`,
+- The configuration-based overload `ConfigureStaticAuthentication()` kept its
+  signature but no longer reads the `Authentication:AuthenticationEndpoint`
+  configuration key: it now resolves the default authentication service
+  (`HostBuilderExtensions.DefaultAuthenticationApplicationName`,
   `pl-identity-service`) with the configured HTTP address resolver.
+  Overloads that take an explicit `Uri`, an application name or an
+  `Action<IHttpClientBuilder>` client configuration callback are new in 8.0.0.
 - `MissingConfigurationException` is no longer thrown for the removed
   `Authentication:AuthenticationEndpoint` key. It is now thrown when the
   remaining required configuration is missing:
