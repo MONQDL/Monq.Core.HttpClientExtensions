@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/Monq.Core.HttpClientExtensions.TestApp/Monq.Core.HttpClientExtensions.TestApp.csproj" />
+    <Project Path="samples/Monq.Core.HttpClientExtensions.TestConsoleApp/Monq.Core.HttpClientExtensions.TestConsoleApp.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".github/workflows/netcorelibrary.yml" />
+    <File Path=".gitignore" />
+    <File Path="CHANGELOG" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+    <File Path="v8-MIGRATION.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Monq.Core.HttpClientExtensions.Tests/Monq.Core.HttpClientExtensions.Tests.csproj" />
+    <Project Path="src/Monq.Core.HttpClientExtensions/Monq.Core.HttpClientExtensions.csproj" />
+  </Folder>
+</Solution>

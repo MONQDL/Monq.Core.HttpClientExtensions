@@ -8,12 +8,13 @@ application name (microservice addressing).
 
 - Target frameworks `net6.0` and `net7.0` were removed. Supported: `net8.0`,
   `net9.0`, `net10.0`.
-- The configuration-based overloads `ConfigureStaticAuthentication()` and
-  `ConfigureStaticAuthentication(Action<IHttpClientBuilder>)` no longer read
-  the `Authentication:AuthenticationEndpoint` configuration key. Their
-  signatures were kept, and they now resolve the default authentication
-  service (`HostBuilderExtensions.DefaultAuthenticationApplicationName`,
+- The configuration-based overload `ConfigureStaticAuthentication()` kept its
+  signature but no longer reads the `Authentication:AuthenticationEndpoint`
+  configuration key: it now resolves the default authentication service
+  (`HostBuilderExtensions.DefaultAuthenticationApplicationName`,
   `pl-identity-service`) with the configured HTTP address resolver.
+  Overloads that take an explicit `Uri`, an application name or an
+  `Action<IHttpClientBuilder>` client configuration callback are new in 8.0.0.
 - `MissingConfigurationException` is no longer thrown for the removed
   `Authentication:AuthenticationEndpoint` key. It is now thrown when the
   remaining required configuration is missing:
@@ -86,27 +87,15 @@ hostBuilder.ConfigureStaticAuthentication(
 
 The `Authentication` section is still required for client credentials
 (`Client:Login`, `Client:Password`) and optional `RequireHttpsMetadata`.
-
-The legacy `Authentication:EnableCaching` key was never read by this library
-and does nothing here. Token caching for static authentication is not a
-library option: the system token is reused until its server-provided
-`expires_in` elapses, with a forced refresh on a `401` response. There is no
-introspection in this library — incoming-token introspection and its cache
-duration are configured in `Monq.Core.BasicDotNetMicroservice` via
-`Authentication:CacheDurationSeconds` (default 300; the Duende OAuth2
-introspection handler always caches, so the old `EnableCaching` switch is not
-supported anywhere anymore).
+Static authentication token caching is not a library option: the system token
+is reused until its server-provided `expires_in` elapses, with a forced
+refresh on a `401` response, so the legacy `Authentication:EnableCaching` key
+does nothing.
 
 Only the `Authentication:AuthenticationEndpoint` key becomes dead
 configuration for services on 8.0.0. Remove it from Consul and application
-configuration after **all** consumers are migrated. Note that the deprecated
-`ConfigureMonqAuthentication(IServiceCollection, IConfiguration)` overload in
-`Monq.Core.BasicDotNetMicroservice` still reads this key until every consumer
-is migrated to the application-name overload (see
-`service-discovery-MIGRATION.md` in that repository).
+configuration after **all** consumers are migrated.
 
 ## Related documents
 
-- [README.md](README.md) — current static authentication API;
-- `service-discovery-MIGRATION.md` in `Monq.Core.BasicDotNetMicroservice` —
-  client addressing migration and the legacy introspection overload.
+- [README.md](README.md) — current static authentication API.

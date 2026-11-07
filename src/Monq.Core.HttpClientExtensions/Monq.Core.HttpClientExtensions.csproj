@@ -30,7 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Monq.Core.MicroserviceAddressing" Version="0.2.0-rev-42252065267" />
+    <PackageReference Include="Monq.Core.MicroserviceAddressing" Version="0.3.0-rev-42358150343" />
   </ItemGroup>
 
   <ItemGroup>
