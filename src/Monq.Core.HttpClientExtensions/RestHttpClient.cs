@@ -1,5 +1,6 @@
 using IdentityModel.Client;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Monq.Core.HttpClientExtensions.Exceptions;
 using Monq.Core.HttpClientExtensions.Extensions;
@@ -35,6 +36,8 @@ namespace Monq.Core.HttpClientExtensions
         readonly ILogger<RestHttpClient> _log;
 
         readonly HttpClient _httpClient;
+
+        readonly IServiceProvider? _serviceProvider;
 
         static DateTime ExpiryTime { get; set; }
 
@@ -86,17 +89,23 @@ namespace Monq.Core.HttpClientExtensions
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RestHttpClient"/> class.
+        /// The optional service provider is used to activate a configured static authentication
+        /// when a token is requested before the host has started its hosted services (for
+        /// example, in console applications that call other services from <c>Program.cs</c>).
         /// </summary>
         /// <param name="httpClient">The HttpClient from http client factory.</param>
         /// <param name="loggerFactory">The logger factory.</param>
         /// <param name="configuration">The configuration.</param>
         /// <param name="httpContextAccessor">The HTTP context accessor.</param>
+        /// <param name="serviceProvider">The optional application service provider.</param>
         public RestHttpClient(HttpClient httpClient,
             ILoggerFactory loggerFactory,
             RestHttpClientOptions configuration,
-            IHttpContextAccessor? httpContextAccessor)
+            IHttpContextAccessor? httpContextAccessor,
+            IServiceProvider? serviceProvider = null)
         {
             _httpClient = httpClient;
+            _serviceProvider = serviceProvider;
 
             HttpContextAccessor = httpContextAccessor;
             LoggerFactory = loggerFactory;
@@ -312,8 +321,20 @@ namespace Monq.Core.HttpClientExtensions
         public async Task<TokenResponse?> GetAccessToken(bool invokeHandler)
         {
             var handler = AuthorizationRequest;
+
             if (handler is null)
-                return null;
+            {
+                // A console application may request a token before the host starts the static
+                // authentication hosted service, so activate the subscription on demand.
+                _serviceProvider?
+                    .GetService<StaticAuthenticationService>()?
+                    .EnsureRegistered();
+
+                handler = AuthorizationRequest;
+
+                if (handler is null)
+                    return null;
+            }
 
             // use token if it exists and is still fresh.
             if (AccessToken is not null && ExpiryTime > DateTime.UtcNow && !invokeHandler)

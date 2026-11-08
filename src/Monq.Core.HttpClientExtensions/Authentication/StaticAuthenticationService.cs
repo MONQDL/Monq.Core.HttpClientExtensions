@@ -29,6 +29,8 @@ namespace Monq.Core.HttpClientExtensions
         readonly IHttpClientFactory _httpClientFactory;
         readonly StaticAuthenticationEndpoint _authenticationEndpoint;
 
+        int _registered;
+
         public StaticAuthenticationService(
             IConfiguration configuration,
             IHttpClientFactory httpClientFactory,
@@ -39,15 +41,26 @@ namespace Monq.Core.HttpClientExtensions
             _authenticationEndpoint = authenticationEndpoint;
         }
 
+        /// <summary>
+        /// Subscribes the token request handler once. Called both from <see cref="StartAsync" />
+        /// and when a <see cref="RestHttpClient" /> requests a token before the host is started.
+        /// </summary>
+        internal void EnsureRegistered()
+        {
+            if (Interlocked.Exchange(ref _registered, 1) == 0)
+                RestHttpClient.AuthorizationRequest += RequestTokenAsync;
+        }
+
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            RestHttpClient.AuthorizationRequest += RequestTokenAsync;
+            EnsureRegistered();
             return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            RestHttpClient.AuthorizationRequest -= RequestTokenAsync;
+            if (Interlocked.Exchange(ref _registered, 0) == 1)
+                RestHttpClient.AuthorizationRequest -= RequestTokenAsync;
             return Task.CompletedTask;
         }
 

@@ -1,9 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Monq.Core.HttpClientExtensions;
 using Monq.Core.MicroserviceAddressing.Addressing;
 using System;
+using System.Linq;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -120,12 +120,18 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return hostBuilder.ConfigureServices((_, services) =>
             {
+                // The first call configures the endpoint, the isolated client, and the hosted
+                // service; repeated calls keep the existing registrations.
+                if (services.Any(static descriptor =>
+                        descriptor.ServiceType == typeof(StaticAuthenticationService)))
+                    return;
+
                 var clientBuilder = services.AddHttpClient(
                     StaticAuthenticationService.HttpClientName,
                     client => client.Timeout = StaticAuthenticationService.DefaultTimeout);
                 configureAuthenticationClient?.Invoke(clientBuilder);
 
-                services.TryAddSingleton(provider =>
+                services.AddSingleton(provider =>
                 {
                     var authenticationEndpoint = authenticationEndpointFactory(provider);
                     ArgumentNullException.ThrowIfNull(authenticationEndpoint);
@@ -137,8 +143,9 @@ namespace Microsoft.Extensions.DependencyInjection
                     return new StaticAuthenticationEndpoint(authenticationEndpoint);
                 });
 
-                services.TryAddEnumerable(
-                    ServiceDescriptor.Singleton<IHostedService, StaticAuthenticationService>());
+                services.AddSingleton<StaticAuthenticationService>();
+                services.AddSingleton<IHostedService>(static provider =>
+                    provider.GetRequiredService<StaticAuthenticationService>());
             });
         }
 

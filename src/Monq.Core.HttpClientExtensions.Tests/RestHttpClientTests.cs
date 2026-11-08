@@ -21,6 +21,7 @@ using Xunit;
 
 namespace Monq.Core.HttpClientExtensions.Tests;
 
+[Collection("StaticAuthentication")]
 public class RestHttpClientTests
 {
     static readonly CamelCasePropertyNamesContractResolver _jsonResolver = new() { NamingStrategy = new CamelCaseNamingStrategy { ProcessDictionaryKeys = true } };

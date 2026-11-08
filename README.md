@@ -78,6 +78,10 @@ In normal mode, the library aims to automatically forward the `Bearer token` fro
 hostBuilder.ConfigureStaticAuthentication();
 ```
 
+The token request subscription is active from the first token request and does not
+require the host to be started, so console applications that call other services
+from `Program.cs` before `RunAsync()` also receive the system token.
+
 This resolves the default authentication service (`pl-identity-service`, see
 `HostBuilderExtensions.DefaultAuthenticationApplicationName`) with the configured HTTP
 microservice address resolver. Pass an explicit application name and optional port to
